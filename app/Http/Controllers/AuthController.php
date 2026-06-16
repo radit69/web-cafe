@@ -71,12 +71,14 @@ class AuthController extends Controller
                 ->withErrors(['password' => 'Kredensial tidak valid untuk role '.ucfirst($role).'.']);
         }
 
-        // Jika admin, arahkan ke dashboard admin.
+        Auth::login($user);
+
+        $user->update(['last_login_at' => now()]);
+
         if ($role === 'admin') {
             return redirect()->route('admin.dashboard');
         }
 
-        // Jika kasir, arahkan ke menu kasir.
         if ($role === 'kasir') {
             return redirect()->route('kasir.menu');
         }
@@ -124,7 +126,7 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
-            'phone' => $data['phone'] ?? null,
+            'phone' => !empty($data['phone']) ? '+62' . ltrim($data['phone']) : null,
             'password' => Hash::make($data['password']),
             'role' => 'pelanggan',
             'is_active' => true,
@@ -134,6 +136,51 @@ class AuthController extends Controller
         Auth::login($user, true);
 
         return redirect()->route('frontend.reservation');
+    }
+
+    public function profileEdit()
+    {
+        return view('frontend.profile');
+    }
+
+    public function profileUpdate(Request $request)
+    {
+        $user = auth()->user();
+
+        if ($request->input('type') === 'username') {
+            $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+            ], [
+                'name.required' => 'Nama tidak boleh kosong.',
+                'name.max' => 'Nama maksimal 255 karakter.',
+            ]);
+
+            $user->update(['name' => $request->input('name')]);
+
+            return back()->with('success', 'Nama berhasil diperbarui.');
+        }
+
+        if ($request->input('type') === 'password') {
+            $request->validate([
+                'current_password' => ['required', 'string'],
+                'new_password' => ['required', 'string', 'min:8', 'confirmed'],
+            ], [
+                'current_password.required' => 'Kata sandi saat ini wajib diisi.',
+                'new_password.required' => 'Kata sandi baru wajib diisi.',
+                'new_password.min' => 'Kata sandi baru minimal 8 karakter.',
+                'new_password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+            ]);
+
+            if (! Hash::check($request->input('current_password'), $user->password)) {
+                return back()->withErrors(['current_password' => 'Kata sandi saat ini salah.']);
+            }
+
+            $user->update(['password' => Hash::make($request->input('new_password'))]);
+
+            return back()->with('success', 'Kata sandi berhasil diubah.');
+        }
+
+        return back();
     }
 
     public function logout(Request $request)

@@ -103,11 +103,7 @@ class ReservationController extends Controller
         });
 
         if ($dpAmount > 0) {
-            MidtransConfig::$serverKey = config('midtrans.server_key');
-            MidtransConfig::$clientKey = config('midtrans.client_key');
-            MidtransConfig::$isProduction = config('midtrans.is_production');
-            MidtransConfig::$isSanitized = config('midtrans.is_sanitized');
-            MidtransConfig::$is3ds = config('midtrans.is_3ds');
+            $this->setupMidtrans();
 
             $orderId = $reservation->reservation_code . '-DP-' . time();
 
@@ -214,11 +210,7 @@ class ReservationController extends Controller
             return response()->json(['error' => 'Tidak ada DP yang perlu dibayar.'], 400);
         }
 
-        MidtransConfig::$serverKey = config('midtrans.server_key');
-        MidtransConfig::$clientKey = config('midtrans.client_key');
-        MidtransConfig::$isProduction = config('midtrans.is_production');
-        MidtransConfig::$isSanitized = config('midtrans.is_sanitized');
-        MidtransConfig::$is3ds = config('midtrans.is_3ds');
+        $this->setupMidtrans();
 
         $orderId = $reservation->reservation_code . '-DP-' . time();
 
@@ -277,9 +269,7 @@ class ReservationController extends Controller
             return response()->json(['error' => 'Order ID tidak ditemukan.'], 400);
         }
 
-        // Verify the transaction status directly with Midtrans
-        MidtransConfig::$serverKey = config('midtrans.server_key');
-        MidtransConfig::$isProduction = config('midtrans.is_production');
+        $this->setupMidtrans();
 
         try {
             $status = \Midtrans\Transaction::status($orderId);
@@ -324,11 +314,7 @@ class ReservationController extends Controller
             return response()->json(['error' => 'Pembayaran sisa hanya bisa dilakukan H-' . $pelunasanHMin . ' atau hari-H reservasi.'], 400);
         }
 
-        MidtransConfig::$serverKey = config('midtrans.server_key');
-        MidtransConfig::$clientKey = config('midtrans.client_key');
-        MidtransConfig::$isProduction = config('midtrans.is_production');
-        MidtransConfig::$isSanitized = config('midtrans.is_sanitized');
-        MidtransConfig::$is3ds = config('midtrans.is_3ds');
+        $this->setupMidtrans();
 
         $orderId = $reservation->reservation_code . '-LUNAS';
 
@@ -432,8 +418,7 @@ class ReservationController extends Controller
 
     public function notificationHandler(Request $request)
     {
-        MidtransConfig::$serverKey = config('midtrans.server_key');
-        MidtransConfig::$isProduction = config('midtrans.is_production');
+        $this->setupMidtrans();
 
         $notification = new \Midtrans\Notification();
 
@@ -543,5 +528,14 @@ class ReservationController extends Controller
         }
 
         return null;
+    }
+
+    protected function setupMidtrans(): void
+    {
+        MidtransConfig::$serverKey = config('midtrans.server_key');
+        MidtransConfig::$clientKey = config('midtrans.client_key');
+        MidtransConfig::$isProduction = config('midtrans.is_production');
+        MidtransConfig::$isSanitized = config('midtrans.is_sanitized');
+        MidtransConfig::$is3ds = config('midtrans.is_3ds');
     }
 }

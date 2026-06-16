@@ -200,15 +200,22 @@
                                 @auth
                                     <div class="relative hidden md:flex items-center gap-2" id="user-menu">
                                         <span class="font-label-md text-primary">{{ auth()->user()->name }}</span>
-                                        <div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-on-primary font-label-md text-sm cursor-pointer" onclick="document.getElementById('user-dropdown').classList.toggle('hidden')">
+                                        <div class="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-on-primary font-label-md text-sm cursor-pointer">
                                             {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
                                         </div>
                                         <div id="user-dropdown" class="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-outline-variant/30 py-2 z-50 hidden">
                                             <p class="px-4 py-2 font-label-sm text-on-surface-variant truncate">{{ auth()->user()->email }}</p>
                                             <hr class="border-outline-variant/30">
+                                            <a href="{{ route('frontend.profile') }}" class="w-full flex items-center gap-2 px-4 py-2 font-body-md text-on-surface-variant hover:bg-surface-container-highest hover:text-primary transition-colors">
+                                                <span class="material-symbols-outlined text-[18px]">edit</span>
+                                                Edit Profil
+                                            </a>
                                             <form method="POST" action="{{ route('frontend.logout') }}">
                                                 @csrf
-                                                <button type="submit" class="w-full text-left px-4 py-2 font-body-md text-error hover:bg-error/5 transition-colors">Keluar</button>
+                                                <button type="submit" class="w-full text-left px-4 py-2 font-body-md text-error hover:bg-error/5 transition-colors flex items-center gap-2">
+                                                    <span class="material-symbols-outlined text-[18px]">logout</span>
+                                                    Keluar
+                                                </button>
                                             </form>
                                         </div>
                                     </div>
@@ -258,6 +265,9 @@
                         userMenuBtn.addEventListener('click', function(e) {
                                 e.stopPropagation();
                                 userDropdown.classList.toggle('hidden');
+                        });
+                        userDropdown.addEventListener('click', function(e) {
+                                e.stopPropagation();
                         });
                         document.addEventListener('click', function() {
                                 userDropdown.classList.add('hidden');
