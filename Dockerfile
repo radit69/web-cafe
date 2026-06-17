@@ -1,6 +1,6 @@
-FROM php:8.2-apache
+FROM dunglas/frankenphp:php8.2-bookworm
 
-RUN docker-php-ext-install \
+RUN install-php-extensions \
     bcmath \
     gd \
     intl \
@@ -20,14 +20,8 @@ COPY . .
 
 RUN composer install --no-dev --no-interaction --optimize-autoloader
 
-RUN a2enmod rewrite && \
-    chown -R www-data:www-data storage bootstrap/cache
-
-RUN sed -i 's!/var/www/html!/app/public!g' /etc/apache2/sites-available/000-default.conf && \
-    sed -i 's!/var/www/!/app/public!g' /etc/apache2/apache2.conf
+RUN chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 8080
 
-CMD sed -i "s/80/$PORT/g" /etc/apache2/sites-available/000-default.conf && \
-    sed -i "s/80/$PORT/g" /etc/apache2/ports.conf && \
-    apache2-foreground
+CMD ["frankenphp", "php-server"]
