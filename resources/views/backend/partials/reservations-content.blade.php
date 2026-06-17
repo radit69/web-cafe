@@ -27,6 +27,8 @@
     $selectedDateLabel = $currentDate
         ? \Carbon\Carbon::parse($currentDate)->translatedFormat('d F Y')
         : null;
+
+    $currentPath = request()->getPathInfo();
 @endphp
 
 <div class="reservations-page">
@@ -41,7 +43,7 @@
                         $query['status'] = $key;
                     }
 
-                    $filterUrl = request()->url() . (count($query) ? '?' . http_build_query($query) : '');
+                    $filterUrl = $currentPath . (count($query) ? '?' . http_build_query($query) : '');
                 @endphp
                 <a href="{{ $filterUrl }}" class="reservation-tab {{ $currentStatus === $key ? 'active' : '' }}">
                     {{ $label }}
@@ -49,7 +51,7 @@
             @endforeach
         </nav>
 
-        <form class="reservation-date-form" method="GET" action="{{ request()->url() }}">
+        <form class="reservation-date-form" method="GET" action="{{ $currentPath }}">
             @if ($currentStatus !== 'all')
                 <input type="hidden" name="status" value="{{ $currentStatus }}">
             @endif
@@ -68,7 +70,7 @@
             </label>
 
             @if ($currentDate)
-                <a class="reservation-date-reset" href="{{ request()->url() }}{{ $currentStatus !== 'all' ? '?status=' . urlencode($currentStatus) : '' }}">
+                <a class="reservation-date-reset" href="{{ $currentPath }}{{ $currentStatus !== 'all' ? '?status=' . urlencode($currentStatus) : '' }}">
                     Reset
                 </a>
             @endif
