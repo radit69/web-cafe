@@ -32,9 +32,8 @@ COPY . .
 
 RUN composer install --no-dev --no-interaction --optimize-autoloader
 
-RUN php artisan optimize:clear && \
-    php artisan optimize
+RUN chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 8080
 
-CMD ["frankenphp", "run", "--config", "/etc/caddy/Caddyfile"]
+CMD ["frankenphp", "php_server"]
