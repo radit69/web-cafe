@@ -84,6 +84,10 @@ a2enmod mpm_prefork || true\n\
 sed -i "s/Listen 80/Listen ${PORT:-8080}/" /etc/apache2/ports.conf\n\
 sed -i "s/:80/:${PORT:-8080}/" /etc/apache2/sites-available/000-default.conf\n\
 \n\
+# Run migrations and seed\n\
+php artisan migrate --force || true\n\
+php artisan db:seed --force || true\n\
+\n\
 # Start Apache\n\
 exec apache2-foreground' > /usr/local/bin/start.sh \
     && chmod +x /usr/local/bin/start.sh
