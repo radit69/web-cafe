@@ -24,8 +24,17 @@ class Menu extends Model
 
     public function getImageUrlAttribute(): string
     {
+        // Check storage/public first (for local dev / uploaded images)
         if ($this->image && Storage::disk('public')->exists($this->image)) {
             return asset('storage/' . $this->image);
+        }
+
+        // Fallback: check public/menu_images (for production/Railway)
+        if ($this->image) {
+            $basename = basename($this->image);
+            if (file_exists(public_path('menu_images/' . $basename))) {
+                return asset('menu_images/' . $basename);
+            }
         }
 
         $text = urlencode($this->name);
