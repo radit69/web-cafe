@@ -36,4 +36,4 @@ RUN chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 8080
 
-CMD ["frankenphp", "php_server"]
+CMD ["frankenphp", "php-server"]
