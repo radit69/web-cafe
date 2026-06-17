@@ -5,6 +5,6 @@
 
 :8080 {
     root * /app/public
-    php_frankenphp
+    frankenphp
     file_server
 }
