@@ -1,0 +1,10 @@
+{
+    auto_https off
+    admin off
+}
+
+:8080 {
+    root * /app/public
+    php_frankenphp
+    file_server
+}
