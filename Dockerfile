@@ -1,24 +1,13 @@
-FROM dunglas/frankenphp:php8.2-bookworm
+FROM php:8.2-apache
 
-RUN install-php-extensions \
+RUN docker-php-ext-install \
     bcmath \
-    calendar \
-    exif \
     gd \
     intl \
     mbstring \
     pdo_mysql \
-    pdo_pgsql \
     pcntl \
-    shmop \
-    soap \
-    sockets \
-    sysvmsg \
-    sysvsem \
-    sysvshm \
     zip \
-    curl \
-    gettext \
     opcache
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -27,13 +16,18 @@ ENV COMPOSER_ALLOW_SUPERUSER=1
 ENV APP_ENV=production
 
 WORKDIR /app
-
 COPY . .
 
 RUN composer install --no-dev --no-interaction --optimize-autoloader
 
-RUN chown -R www-data:www-data storage bootstrap/cache
+RUN a2enmod rewrite && \
+    chown -R www-data:www-data storage bootstrap/cache
+
+RUN sed -i 's!/var/www/html!/app/public!g' /etc/apache2/sites-available/000-default.conf && \
+    sed -i 's!/var/www/!/app/public!g' /etc/apache2/apache2.conf
 
 EXPOSE 8080
 
-CMD ["frankenphp", "run"]
+CMD sed -i "s/80/$PORT/g" /etc/apache2/sites-available/000-default.conf && \
+    sed -i "s/80/$PORT/g" /etc/apache2/ports.conf && \
+    apache2-foreground
