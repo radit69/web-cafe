@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y \
 # Enable Apache mod_rewrite
 RUN a2enmod rewrite
 
-# Disable conflicting MPMs and force prefork
+# Disable conflicting MPMs and force prefork (build time)
 RUN a2dismod mpm_event mpm_worker || true
 RUN a2enmod mpm_prefork || true
 
@@ -71,8 +71,21 @@ RUN php artisan config:clear \
     && php artisan route:clear \
     && php artisan view:clear
 
-# Use a startup script to handle PORT dynamically
-RUN echo '#!/bin/bash\nsed -i "s/Listen 80/Listen ${PORT:-8080}/" /etc/apache2/ports.conf\nsed -i "s/:80/:${PORT:-8080}/" /etc/apache2/sites-available/000-default.conf\napache2-foreground' > /usr/local/bin/start.sh \
+# Use a startup script to handle PORT dynamically and force disable duplicate MPMs at runtime
+RUN echo '#!/bin/bash\n\
+# Force delete duplicate MPM configurations if they get re-enabled\n\
+rm -f /etc/apache2/mods-enabled/mpm_event.load\n\
+rm -f /etc/apache2/mods-enabled/mpm_event.conf\n\
+rm -f /etc/apache2/mods-enabled/mpm_worker.load\n\
+rm -f /etc/apache2/mods-enabled/mpm_worker.conf\n\
+a2enmod mpm_prefork || true\n\
+\n\
+# Set port\n\
+sed -i "s/Listen 80/Listen ${PORT:-8080}/" /etc/apache2/ports.conf\n\
+sed -i "s/:80/:${PORT:-8080}/" /etc/apache2/sites-available/000-default.conf\n\
+\n\
+# Start Apache\n\
+exec apache2-foreground' > /usr/local/bin/start.sh \
     && chmod +x /usr/local/bin/start.sh
 
 EXPOSE 8080
