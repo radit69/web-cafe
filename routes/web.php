@@ -17,13 +17,6 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/test-db', function () {
-    return response()->json([
-        'menu_count' => \App\Models\Menu::count(),
-        'menus' => \App\Models\Menu::all(['id', 'name', 'image'])->toArray(),
-    ]);
-});
-
 // Halaman Frontend (Public)
 Route::get('/', [FrontendController::class, 'home'])->name('frontend.home');
 Route::get('/menu', [FrontendController::class, 'menu'])->name('frontend.menu');
