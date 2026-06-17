@@ -20,15 +20,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Ensure default admin user exists for demo
-       if (! User::where('role', 'admin')->exists()) {
-            User::create([
-                'name'      => 'admin',
-                'email'     => 'admin@gmailp.com',
-                'password'  => bcrypt('admin123'),
-                'role'      => 'admin',
-                'is_active' => true,
-            ]);
+        try {
+            if (! User::where('role', 'admin')->exists()) {
+                User::create([
+                    'name'      => 'admin',
+                    'email'     => 'admin@gmailp.com',
+                    'password'  => bcrypt('admin123'),
+                    'role'      => 'admin',
+                    'is_active' => true,
+                ]);
+            }
+        } catch (\Throwable) {
+            // Skip when database is not available (e.g., during build)
         }
     }
 }
