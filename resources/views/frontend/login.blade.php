@@ -145,7 +145,7 @@
             class="w-full max-w-[1120px] grid grid-cols-1 md:grid-cols-2 bg-surface-container-low rounded-xl overflow-hidden shadow-[0_20px_40px_rgba(53,64,36,0.04)] border border-secondary/10">
             <div class="hidden md:block relative h-full min-h-[600px]">
                 <img alt="coffith Coffee &amp; Kitchen Interior" class="absolute inset-0 w-full h-full object-cover"
-                    src="{{ asset('images/coffith-login.jpg') }}" />
+                    src="{{ asset('images/coffith-login.png') }}" />
                 <div
                     class="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent flex flex-col justify-end p-12">
                     <h2 class="font-headline-lg text-headline-lg text-white mb-4">Pengalaman Kuliner Eksklusif</h2>
