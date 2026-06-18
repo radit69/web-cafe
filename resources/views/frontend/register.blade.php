@@ -197,12 +197,12 @@
                     <div class="space-y-2">
                         <label class="font-label-sm text-label-sm text-secondary uppercase tracking-widest"
                             for="phone">Nomor Telepon</label>
-                        <div class="relative flex items-center border-b border-outline-variant focus-within:border-primary transition-colors">
+                        <div class="relative">
                             <span
                                 class="material-symbols-outlined absolute left-0 top-1/2 -translate-y-1/2 text-outline-variant">call</span>
-                                <input
-                                    class="w-full pl-8 pr-4 py-3 bg-transparent border-none focus:ring-0 font-body-md text-body-md outline-none"
-                                    id="phone" name="phone" placeholder="812 3456 7890" type="tel" value="{{ old('phone') }}" />
+                            <input
+                                class="w-full pl-8 pr-4 py-3 bg-transparent border-b border-outline-variant focus:border-primary focus:ring-0 transition-colors font-body-md text-body-md outline-none"
+                                id="phone" name="phone" placeholder="08xxxxxxxxxx" type="tel" value="{{ old('phone') }}" />
                         </div>
                         @error('phone')
                             <p class="font-label-sm text-label-sm text-error">{{ $message }}</p>
