@@ -83,14 +83,11 @@ class MenuController extends Controller
     private function storeMenuImage(Request $request): string
     {
         $file = $request->file('image');
-        $directory = public_path('menu_images');
-
-        File::ensureDirectoryExists($directory);
-
         $filename = uniqid('menu_', true) . '.' . $file->getClientOriginalExtension();
-        $file->move($directory, $menuImagePath = $directory . '/' . $filename);
 
-        return 'menu_images/' . $menuImagePath;
+        $file->storeAs('menu_images', $filename, 'public');
+
+        return 'menu_images/' . $filename;
     }
 }
 
