@@ -12,76 +12,62 @@ use Illuminate\Support\Str;
 class AuthController extends Controller
 {
     /**
-     * Show user type selection page.
+     * Show staff login page.
      */
     public function selectRole()
     {
-        return view('backend.auth.select_role');
+        return view('backend.auth.login');
     }
 
     /**
-     * Show login form for given role.
+     * Redirect legacy role login URLs to the single staff login page.
      */
     public function showLoginForm(string $role)
     {
-        $role = strtolower($role);
-
-        if (! in_array($role, ['admin', 'kasir'])) {
-            abort(404);
-        }
-
-        return view('backend.auth.login', [
-            'role' => $role,
-        ]);
+        return redirect()->route('select.role');
     }
 
     /**
-     * Process login with simple hardcoded passwords per role.
+     * Process staff login and redirect by the user's role.
      */
-    public function login(Request $request, string $role)
+    public function login(Request $request, ?string $role = null)
     {
-        $role = strtolower($role);
-
-        if (! in_array($role, ['admin', 'kasir'])) {
-            abort(404);
-        }
-
         $request->validate([
             'username' => ['required', 'string', 'max:255'],
             'password' => ['required', 'string'],
         ]);
 
-        // Cek apakah ada user aktif untuk role tersebut
-        $exists = User::where('role', $role)->where('is_active', true)->exists();
-        if (! $exists) {
-            return back()
-                ->withInput($request->only('username'))
-                ->withErrors(['username' => 'Belum ada user aktif untuk role '.ucfirst($role).'. Tambahkan user di Admin terlebih dahulu.']);
-        }
-
         $username = $request->input('username');
-        $user = User::where('role', $role)
+        $user = User::whereIn('role', ['admin', 'kasir'])
             ->where('is_active', true)
-            ->where(function($q) use ($username){
+            ->where(function ($q) use ($username) {
                 $q->where('name', $username)->orWhere('email', $username);
-            })->first();
+            })
+            ->first();
+
         if (! $user || ! Hash::check($request->input('password'), $user->password)) {
             return back()
                 ->withInput($request->only('username'))
-                ->withErrors(['password' => 'Kredensial tidak valid untuk role '.ucfirst($role).'.']);
+                ->withErrors(['password' => 'Username/email atau password staff tidak valid.']);
         }
 
         Auth::login($user);
 
         $user->update(['last_login_at' => now()]);
 
-        if ($role === 'admin') {
+        if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard');
         }
 
-        if ($role === 'kasir') {
+        if ($user->role === 'kasir') {
             return redirect()->route('kasir.menu');
         }
+
+        Auth::logout();
+
+        return back()
+            ->withInput($request->only('username'))
+            ->withErrors(['username' => 'Akun ini bukan akun staff admin atau kasir.']);
     }
 
     public function customerLogin(Request $request)

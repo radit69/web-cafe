@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - {{ ucfirst($role) }}</title>
+    <title>Login Staff</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -142,10 +142,10 @@
     <main class="card">
         <h1 class="title">Login</h1>
         <p class="subtitle">
-            Silahkan masuk dengan akun anda ({{ ucfirst($role) }})
+            Silahkan masuk dengan akun staff anda
         </p>
 
-        <form action="{{ route('login.role.submit', ['role' => $role]) }}" method="post">
+        <form action="{{ route('staff.login.submit') }}" method="post">
             @csrf
 
             <div class="field-group">
@@ -182,7 +182,7 @@
             <button type="submit" class="btn-submit">Masuk</button>
         </form>
 
-        <a href="{{ route('select.role') }}" class="back-link">&larr; Kembali ke pilihan user</a>
+        <a href="{{ route('frontend.home') }}" class="back-link">&larr; Kembali ke beranda</a>
     </main>
 </body>
 </html>

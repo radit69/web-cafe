@@ -224,8 +224,9 @@
                                         <button type="submit" class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" data-icon="logout">logout</button>
                                     </form>
                                 @else
-                                    <button class="material-symbols-outlined text-primary dark:text-primary-fixed-dim hover:text-primary-fixed transition-colors" data-icon="person">person</button>
-                                    <a href="{{ route('login') }}" class="hidden md:block bg-primary text-on-primary px-6 py-2 rounded-full font-label-md text-label-md active:scale-95 transition-transform">Masuk</a>
+                                    <a href="{{ route('select.role') }}" class="hidden md:block border border-primary text-primary px-4 py-2 rounded-full font-label-md text-label-md hover:bg-primary hover:text-on-primary active:scale-95 transition-all">Masuk Staff</a>
+                                    <a href="{{ route('frontend.register') }}" class="hidden md:block text-primary px-2 py-2 font-label-md text-label-md hover:text-secondary transition-colors">Daftar</a>
+                                    <a href="{{ route('login') }}" class="bg-primary text-on-primary px-5 md:px-6 py-2 rounded-full font-label-md text-label-md active:scale-95 transition-transform">Masuk</a>
                                 @endauth
                         </div>
                 </nav>

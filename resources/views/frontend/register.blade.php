@@ -126,13 +126,17 @@
                 <span class="font-label-sm text-label-sm text-secondary dark:text-on-surface-variant -mt-1">Coffee
                     &amp; Kitchen</span>
             </a>
-            <nav class="hidden md:flex gap-8">
+            <nav class="hidden md:flex items-center gap-8">
                 <a class="text-on-surface-variant font-label-md text-label-md hover:opacity-80 transition-opacity"
                     href="{{ route('frontend.home') }}">Beranda</a>
                 <a class="text-on-surface-variant font-label-md text-label-md hover:opacity-80 transition-opacity"
                     href="{{ route('frontend.menu') }}">Menu</a>
                 <a class="text-on-surface-variant font-label-md text-label-md hover:opacity-80 transition-opacity"
                     href="{{ route('frontend.reservation') }}">Reservasi</a>
+                <a class="text-primary font-label-md text-label-md hover:opacity-80 transition-opacity"
+                    href="{{ route('login') }}">Masuk</a>
+                <a class="border border-primary text-primary px-4 py-2 rounded-full font-label-md text-label-md hover:bg-primary hover:text-white transition-all"
+                    href="{{ route('select.role') }}">Masuk Staff</a>
             </nav>
         </div>
     </header>

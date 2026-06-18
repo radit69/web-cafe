@@ -68,6 +68,7 @@ Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallbac
 
 // Backend Auth (public — login page & submit for admin/kasir)
 Route::get('/backend', [AuthController::class, 'selectRole'])->name('select.role');
+Route::post('/backend', [AuthController::class, 'login'])->name('staff.login.submit');
 Route::get('/login/{role}', [AuthController::class, 'showLoginForm'])->name('login.role');
 Route::post('/login/{role}', [AuthController::class, 'login'])->name('login.role.submit');
 
