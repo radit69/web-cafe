@@ -207,6 +207,68 @@ class KasirController extends Controller
         }
     }
 
+    public function reportExportPdf()
+    {
+        $date = request('date', today()->toDateString());
+
+        $sales = Sale::whereDate('created_at', $date)->get();
+        $reservations = Reservation::whereDate('reservation_date', $date)
+            ->whereIn('status', ['confirmed', 'completed'])
+            ->get();
+        $allReservations = Reservation::whereDate('reservation_date', $date)->get();
+
+        $dailySalesItems = [];
+
+        foreach ($sales as $sale) {
+            $items = $sale->items;
+            if (is_array($items)) {
+                foreach ($items as $item) {
+                    $dailySalesItems[] = [
+                        'customer' => $sale->customer_name ?? 'Umum',
+                        'product' => $item['name'] ?? 'Unknown',
+                        'qty' => $item['qty'] ?? 1,
+                        'price' => $item['price'] ?? 0,
+                        'total' => ($item['qty'] ?? 1) * ($item['price'] ?? 0),
+                        'payment' => ucfirst($sale->payment_method ?? 'Cash'),
+                    ];
+                }
+            }
+        }
+
+        foreach ($reservations as $res) {
+            $items = $res->order_items;
+            if (is_array($items) && count($items) > 0) {
+                foreach ($items as $item) {
+                    $dailySalesItems[] = [
+                        'customer' => $res->customer_name,
+                        'product' => $item['name'] ?? 'Unknown',
+                        'qty' => $item['qty'] ?? 1,
+                        'price' => $item['price'] ?? 0,
+                        'total' => ($item['qty'] ?? 1) * ($item['price'] ?? 0),
+                        'payment' => 'Reservasi (' . ucfirst($res->dp_status) . ')',
+                    ];
+                }
+            } else {
+                $dailySalesItems[] = [
+                    'customer' => $res->customer_name,
+                    'product' => 'Reservasi Meja',
+                    'qty' => 1,
+                    'price' => $res->total_amount,
+                    'total' => $res->total_amount,
+                    'payment' => 'Reservasi (' . ucfirst($res->dp_status) . ')',
+                ];
+            }
+        }
+
+        $html = view('backend.kasir.pdf_report', compact('dailySalesItems', 'allReservations', 'date'))->render();
+
+        $dompdf = new \Dompdf\Dompdf();
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+        return $dompdf->stream('laporan-kasir-' . $date . '.pdf');
+    }
+
     protected function setupMidtrans(): void
     {
         \Midtrans\Config::$serverKey = config('midtrans.server_key');

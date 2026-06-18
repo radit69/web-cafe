@@ -76,8 +76,10 @@
     @endphp
 
     <div class="top-actions">
-        <form action="{{ route('admin.sales.export') }}" method="GET">
-            <button type="submit" class="btn-pill">Export</button>
+        <form action="{{ route('admin.sales.export_pdf') }}" method="GET" style="display:inline;">
+            <input type="hidden" name="from" value="{{ $from }}">
+            <input type="hidden" name="to" value="{{ $to }}">
+            <button type="submit" class="btn-pill">Export PDF</button>
         </form>
     </div>
 

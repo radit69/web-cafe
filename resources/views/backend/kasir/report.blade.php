@@ -81,7 +81,7 @@
 
 @section('content')
     <!-- Filter Tanggal -->
-    <div style="margin-bottom: 24px;">
+    <div style="margin-bottom: 24px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
         <form method="GET" action="{{ route('kasir.report') }}" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
             <div style="background:#faecd8; border: 2px solid #354024; border-radius: 12px; padding: 6px 12px; font-size: 13px; display: flex; gap: 6px; align-items: center;">
                 <label for="date-filter" style="font-weight: 600; color: #211b0f; font-size: 12px; margin-right: 4px;">Tanggal:</label>
@@ -97,6 +97,9 @@
                 Filter
             </button>
         </form>
+        <a href="{{ route('kasir.report.export_pdf', ['date' => $date]) }}" class="filter-btn active" style="padding: 8px 16px; font-size: 13px; border-radius: 12px; border: 2px solid #354024; font-family: inherit; font-weight: 600; cursor: pointer; text-decoration: none; background: #354024; color: #fff;">
+            Export PDF
+        </a>
     </div>
 
     <!-- Penjualan Harian -->

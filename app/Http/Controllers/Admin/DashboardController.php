@@ -55,6 +55,27 @@ class DashboardController extends Controller
         return "Export laporan penjualan (contoh).";
     }
 
+    public function salesExportPdf()
+    {
+        $from = request('from', today()->subDays(30)->toDateString());
+        $to = request('to', today()->toDateString());
+
+        $sales = Sale::whereDate('created_at', '>=', $from)
+            ->whereDate('created_at', '<=', $to)
+            ->orderBy('created_at')->get();
+
+        $totalRevenue = $sales->sum('total');
+        $totalOrders = $sales->count();
+
+        $html = view('backend.admin.pdf_sales', compact('sales', 'from', 'to', 'totalRevenue', 'totalOrders'))->render();
+
+        $dompdf = new \Dompdf\Dompdf();
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+        return $dompdf->stream('laporan-penjualan-' . $from . '-sampai-' . $to . '.pdf');
+    }
+
     public function settings()
     {
         $pajak = Setting::getValue('pajak', '10');

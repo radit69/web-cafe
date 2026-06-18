@@ -85,6 +85,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
 
     Route::get('/sales', [AdminDashboardController::class, 'sales'])->name('sales');
     Route::get('/sales/export', [AdminDashboardController::class, 'salesExport'])->name('sales.export');
+    Route::get('/sales/export-pdf', [AdminDashboardController::class, 'salesExportPdf'])->name('sales.export_pdf');
 
     Route::get('/reservations', [ReservationController::class, 'backendIndex'])->name('reservations');
     Route::delete('/reservations/{id}', [ReservationController::class, 'destroy'])->name('reservations.destroy');
@@ -100,6 +101,7 @@ Route::prefix('kasir')->name('kasir.')->middleware(['auth', 'role:kasir'])->grou
     Route::get('/stock', [KasirController::class, 'stock'])->name('stock');
     Route::post('/stock/restock', [KasirController::class, 'stockRestock'])->name('stock.restock');
     Route::get('/report', [KasirController::class, 'report'])->name('report');
+    Route::get('/report/export-pdf', [KasirController::class, 'reportExportPdf'])->name('report.export_pdf');
     Route::get('/reservations', [ReservationController::class, 'backendIndex'])->name('reservations');
     Route::delete('/reservations/{id}', [ReservationController::class, 'destroy'])->name('reservations.destroy');
     Route::patch('/reservations/{id}/status', [ReservationController::class, 'updateStatusBackend'])->name('reservations.update_status');
