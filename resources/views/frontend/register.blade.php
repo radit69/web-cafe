@@ -144,8 +144,8 @@
         <div
             class="w-full max-w-[1120px] grid grid-cols-1 md:grid-cols-2 bg-surface-container-low rounded-xl overflow-hidden shadow-[0_20px_40px_rgba(53,64,36,0.04)] border border-secondary/10">
             <div class="hidden md:block relative h-full min-h-[600px]">
-                <img alt="Saji Restaurant Food" class="absolute inset-0 w-full h-full object-cover"
-                    src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2070&auto=format&fit=crop" />
+                <img alt="coffith Coffee &amp; Kitchen Interior" class="absolute inset-0 w-full h-full object-cover"
+                    src="{{ asset('images/coffith-register.jpg') }}" />
                 <div
                     class="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent flex flex-col justify-end p-12">
                     <h2 class="font-headline-lg text-headline-lg text-white mb-4">Nikmati Cita Rasa Eksklusif</h2>
@@ -202,7 +202,7 @@
                                 class="material-symbols-outlined absolute left-0 top-1/2 -translate-y-1/2 text-outline-variant">call</span>
                             <input
                                 class="w-full pl-8 pr-4 py-3 bg-transparent border-b border-outline-variant focus:border-primary focus:ring-0 transition-colors font-body-md text-body-md outline-none"
-                                id="phone" name="phone" placeholder="08xxxxxxxxxx" type="tel" value="{{ old('phone') }}" />
+                                id="phone" name="phone" placeholder="0812 3456 7890" type="tel" value="{{ old('phone') }}" />
                         </div>
                         @error('phone')
                             <p class="font-label-sm text-label-sm text-error">{{ $message }}</p>

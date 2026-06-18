@@ -145,7 +145,7 @@
             class="w-full max-w-[1120px] grid grid-cols-1 md:grid-cols-2 bg-surface-container-low rounded-xl overflow-hidden shadow-[0_20px_40px_rgba(53,64,36,0.04)] border border-secondary/10">
             <div class="hidden md:block relative h-full min-h-[600px]">
                 <img alt="coffith Coffee &amp; Kitchen Interior" class="absolute inset-0 w-full h-full object-cover"
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXsIzV30lRrHtk8xTuQOo_QF-9DSAmVbRcAX09FZchExQdor1OYjmg7k4zNi3PhyZvptcFWuyN-NuLBfQU8NGfaGCChyqbqTBL6tVBT7hqHab5jNJbVuq2wI-fIEcav4ItP7vDncK-AdejSYbUII2OcX9GxmSRyt8LRV5GdToKDX_xv53U-GW7-rti7cy_0MgjeowMqgVpJMkvZOdXmQjO16cRcY1pgVsFq8rsp3G-HYR09drcUPkb9nwVBar18Z6E035ciNmG5Kk" />
+                    src="{{ asset('images/coffith-login.jpg') }}" />
                 <div
                     class="absolute inset-0 bg-gradient-to-t from-primary/60 to-transparent flex flex-col justify-end p-12">
                     <h2 class="font-headline-lg text-headline-lg text-white mb-4">Pengalaman Kuliner Eksklusif</h2>
@@ -171,7 +171,7 @@
                             for="email">Email</label>
                         <div class="relative">
                             <span
-                                class="material-symbols-outlined absolute left-0 top-1/2 -translate-y-1/2 text-outline-variant">mail</span>
+                                class="material-symbols-outlined absolute left-0 top-1/2 -translate-y-1/2 text-outline-variant">email</span>
                             <input
                                 class="w-full pl-8 pr-4 py-3 bg-transparent border-b border-outline-variant focus:border-primary focus:ring-0 transition-colors font-body-md text-body-md outline-none"
                                 id="email" name="email" placeholder="nama@email.com" type="email" value="{{ old('email') }}" required />
