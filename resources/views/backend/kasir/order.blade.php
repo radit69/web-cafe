@@ -564,8 +564,10 @@
         <div class="modal-title">Metode Pembayaran</div>
         <div class="method-row" id="methodRow">
             <button class="pill active" data-method="Cash">Cash</button>
-            <button class="pill" data-method="Debit">Debit</button>
-            <button class="pill" data-method="QRIS">Qris</button>
+            <button class="pill" data-method="QRIS">QRIS</button>
+            <button class="pill" data-method="Virtual Account">Virtual Account</button>
+            <button class="pill" data-method="Bank Transfer">Bank Transfer</button>
+            <button class="pill" data-method="E-Wallet">E-Wallet</button>
         </div>
         <div class="separator"></div>
         
@@ -588,9 +590,14 @@
             <div style="font-size:13px; font-weight:600; margin-top:12px; color:#555;">Scan QR code di atas untuk membayar</div>
         </div>
 
+        <!-- Customer Name -->
+        <div class="modal-title">Nama Pelanggan</div>
+        <input type="text" id="customerNameInput" class="dt-input" style="margin-bottom:14px;" placeholder="Masukkan nama pelanggan" value="Chesi">
+
         <!-- Cash Section -->
         <div id="cashPaymentSection">
             <div class="modal-title">Jumlah Uang</div>
+            <input type="text" id="customAmountInput" class="dt-input" style="margin-bottom:8px;" placeholder="Ketik jumlah uang..." oninput="onCustomAmountInput()">
             <div style="font-size:14px;font-weight:700;color:#111;margin-bottom:8px;" id="enteredAmountLabel">Rp0</div>
             <div class="amount-grid" id="amountGrid">
                 <button class="chip" data-amount="10000">Rp10.000</button>
@@ -815,8 +822,9 @@
             // Reset to Cash by default
             selectPaymentMethod('Cash');
             
-            // Default pay amount
+            // Default pay amount to total
             payAmount = currentGrandTotal;
+            document.getElementById('customAmountInput').value = formatIDR(payAmount).replace('Rp', '');
             updateChange();
         }
         
@@ -833,9 +841,12 @@
             if (method === 'QRIS') {
                 qrisSection.style.display = 'flex';
                 cashSection.style.display = 'none';
-            } else {
+            } else if (method === 'Cash') {
                 qrisSection.style.display = 'none';
                 cashSection.style.display = 'block';
+            } else {
+                qrisSection.style.display = 'none';
+                cashSection.style.display = 'none';
             }
         }
 
@@ -850,38 +861,132 @@
                 return;
             }
             
-            // Proceed to show receipt
-            modal.style.display = 'none';
+            const customerName = document.getElementById('customerNameInput').value.trim() || 'Umum';
+            const changeAmount = selectedMethod === 'Cash' ? Math.max(payAmount - currentGrandTotal, 0) : 0;
+            
+            // Prepare payload
             const payload = {
                 items: cart.map(it => ({ name: it.name, qty: it.qty, price: it.price })),
                 total: currentGrandTotal,
-                payment_method: selectedMethod
+                payment_method: selectedMethod,
+                customer_name: customerName,
+                amount_paid: selectedMethod === 'Cash' ? payAmount : 0,
+                change: changeAmount
             };
-            fetch('{{ route("kasir.order.checkout") }}', {
+
+            // Close payment modal
+            modal.style.display = 'none';
+
+            if (selectedMethod === 'Cash') {
+                // Cash flow: save and show receipt directly
+                fetch('{{ route("kasir.order.checkout") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .then(() => {
+                    showStruk();
+                })
+                .catch(() => {
+                    alert('Gagal menyimpan transaksi, namun struk tetap ditampilkan.');
+                    showStruk();
+                });
+            } else {
+                // Non-cash flow: save sale first, then Midtrans Snap
+                fetch('{{ route("kasir.order.checkout") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .then(data => {
+                    const saleId = data.sale_id;
+                    // Get Midtrans snap token
+                    return fetch('{{ route("kasir.order.midtrans_pay") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ sale_id: saleId })
+                    })
+                    .then(r => r.ok ? r.json() : Promise.reject())
+                    .then(mtData => {
+                        if (mtData.snap_token) {
+                            snap.pay(mtData.snap_token, {
+                                onSuccess: function() {
+                                    confirmMidtransAndShowStruk(saleId);
+                                },
+                                onPending: function() {
+                                    alert('Pembayaran masih pending. Silakan tunggu konfirmasi.');
+                                    confirmMidtransAndShowStruk(saleId);
+                                },
+                                onError: function() {
+                                    alert('Pembayaran gagal!');
+                                    resetAfterPayment();
+                                },
+                                onClose: function() {
+                                    resetAfterPayment();
+                                }
+                            });
+                        } else {
+                            alert('Gagal mendapatkan token pembayaran.');
+                            resetAfterPayment();
+                        }
+                    })
+                    .catch(() => {
+                        alert('Gagal memproses pembayaran Midtrans.');
+                        resetAfterPayment();
+                    });
+                })
+                .catch(() => {
+                    alert('Gagal menyimpan transaksi.');
+                    resetAfterPayment();
+                });
+            }
+        });
+
+        function confirmMidtransAndShowStruk(saleId) {
+            fetch('{{ route("kasir.order.confirm_midtrans") }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ sale_id: saleId })
             })
-            .then(r => r.ok ? r.json() : Promise.reject())
-            .then(() => {
+            .then(r => r.json())
+            .then(data => {
                 showStruk();
             })
             .catch(() => {
-                alert('Gagal menyimpan transaksi, namun struk tetap ditampilkan.');
                 showStruk();
             });
-        });
+        }
+
+        function resetAfterPayment() {
+            cart = [];
+            resetOrderInputs();
+            renderCart();
+        }
 
         function showStruk() {
             // Generate Invoice No
             const date = new Date();
             const invNo = 'INV-' + date.getFullYear() + '-' + (date.getMonth()+1).toString().padStart(2,'0') + date.getDate().toString().padStart(2,'0') + '-' + Math.floor(Math.random()*1000).toString().padStart(4,'0');
             
+            const customerName = document.getElementById('customerNameInput').value.trim() || 'Umum';
+            
             // Populate Data
             document.getElementById('strukInv').textContent = invNo;
+            document.getElementById('strukCust').textContent = customerName;
             document.getElementById('strukDate').textContent = date.toLocaleString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
             
             // Items
@@ -928,8 +1033,16 @@
             document.getElementById('taxInput').value = '10%';
         }
 
+        function onCustomAmountInput() {
+            const input = document.getElementById('customAmountInput');
+            const raw = input.value.replace(/[^0-9]/g, '');
+            payAmount = parseInt(raw, 10) || 0;
+            updateChange();
+        }
+
         chips.forEach(ch => ch.addEventListener('click', () => {
             payAmount = parseInt(ch.dataset.amount, 10);
+            document.getElementById('customAmountInput').value = formatIDR(payAmount).replace('Rp', '');
             updateChange();
         }));
 

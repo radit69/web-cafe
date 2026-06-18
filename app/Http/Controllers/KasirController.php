@@ -111,6 +111,9 @@ class KasirController extends Controller
             'items.*.price' => ['required', 'integer', 'min:0'],
             'total' => ['required', 'integer', 'min:0'],
             'payment_method' => ['nullable', 'string'],
+            'customer_name' => ['nullable', 'string', 'max:255'],
+            'amount_paid' => ['nullable', 'integer', 'min:0'],
+            'change' => ['nullable', 'integer', 'min:0'],
         ]);
 
         foreach ($data['items'] as $it) {
@@ -124,8 +127,92 @@ class KasirController extends Controller
             'items' => $data['items'],
             'total' => $data['total'],
             'payment_method' => $data['payment_method'] ?? null,
+            'customer_name' => $data['customer_name'] ?? null,
+            'amount_paid' => $data['amount_paid'] ?? 0,
+            'change' => $data['change'] ?? 0,
         ]);
 
         return response()->json(['ok' => true, 'sale_id' => $sale->id]);
+    }
+
+    public function midtransPay(Request $request)
+    {
+        $data = $request->validate([
+            'sale_id' => ['required', 'integer', 'exists:sales,id'],
+        ]);
+
+        $sale = Sale::findOrFail($data['sale_id']);
+
+        if (!$sale->code) {
+            $sale->update(['code' => Sale::generateCode()]);
+            $sale->refresh();
+        }
+
+        $this->setupMidtrans();
+
+        $itemDetails = [];
+        foreach ($sale->items as $item) {
+            $itemDetails[] = [
+                'id' => $item['name'],
+                'price' => (int) $item['price'],
+                'quantity' => (int) $item['qty'],
+                'name' => $item['name'],
+            ];
+        }
+
+        $params = [
+            'transaction_details' => [
+                'order_id' => $sale->code,
+                'gross_amount' => (int) $sale->total,
+            ],
+            'item_details' => $itemDetails,
+            'callbacks' => [
+                'finish' => route('kasir.order'),
+            ],
+        ];
+
+        try {
+            $snapResponse = \Midtrans\Snap::createTransaction($params);
+            return response()->json([
+                'snap_token' => $snapResponse->token,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'Gagal membuat transaksi Midtrans.'], 500);
+        }
+    }
+
+    public function confirmMidtrans(Request $request)
+    {
+        $data = $request->validate([
+            'sale_id' => ['required', 'integer', 'exists:sales,id'],
+        ]);
+
+        $sale = Sale::findOrFail($data['sale_id']);
+
+        if ($sale->payment_status === 'settlement') {
+            return response()->json(['ok' => true]);
+        }
+
+        try {
+            $this->setupMidtrans();
+            $status = \Midtrans\Transaction::status($sale->code);
+            $txStatus = $status->transaction_status ?? '';
+            if (in_array($txStatus, ['settlement', 'capture'])) {
+                $sale->update(['payment_status' => 'settlement']);
+                return response()->json(['ok' => true]);
+            }
+            return response()->json(['ok' => false, 'status' => $txStatus]);
+        } catch (\Exception $e) {
+            return response()->json(['ok' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    protected function setupMidtrans(): void
+    {
+        \Midtrans\Config::$serverKey = config('midtrans.server_key');
+        \Midtrans\Config::$clientKey = config('midtrans.client_key');
+        \Midtrans\Config::$isProduction = config('midtrans.is_production');
+        \Midtrans\Config::$isSanitized = config('midtrans.is_sanitized');
+        \Midtrans\Config::$is3ds = config('midtrans.is_3ds');
     }
 }

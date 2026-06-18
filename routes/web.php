@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\FrontendController;
 use App\Http\Controllers\KasirController;
@@ -19,6 +20,15 @@ use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 
 // Halaman Frontend (Public)
 Route::get('/', [FrontendController::class, 'home'])->name('frontend.home');
+Route::get('/uploaded-menu-images/{filename}', function (string $filename) {
+    abort_if(str_contains($filename, '..'), 404);
+
+    $path = 'menu_images/' . basename($filename);
+
+    abort_unless(Storage::disk('public')->exists($path), 404);
+
+    return response()->file(Storage::disk('public')->path($path));
+})->where('filename', '[^/]+')->name('menu.uploaded_image');
 Route::get('/menu', [FrontendController::class, 'menu'])->name('frontend.menu');
 Route::get('/menu/detail', [FrontendController::class, 'menuDetailRedirect'])->name('frontend.detail');
 Route::get('/menu/{menu}', [FrontendController::class, 'menuDetail'])->name('frontend.menu.detail');
@@ -95,4 +105,6 @@ Route::prefix('kasir')->name('kasir.')->middleware(['auth', 'role:kasir'])->grou
     Route::patch('/reservations/{id}/status', [ReservationController::class, 'updateStatusBackend'])->name('reservations.update_status');
     Route::get('/order', [KasirController::class, 'order'])->name('order');
     Route::post('/order/checkout', [KasirController::class, 'orderCheckout'])->name('order.checkout');
+    Route::post('/order/midtrans-pay', [KasirController::class, 'midtransPay'])->name('order.midtrans_pay');
+    Route::post('/order/confirm-midtrans', [KasirController::class, 'confirmMidtrans'])->name('order.confirm_midtrans');
 });
