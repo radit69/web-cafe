@@ -251,15 +251,15 @@
     .pill{
         padding:10px 22px;
         border-radius:18px;
-        border:1px solid #c7b295;
-        background:#E8D5B5;
+        border:1px solid #354024;
+        background:#efe0cd;
         font-size:14px;
         cursor:pointer;
     }
     .pill.active{
-        background:#8B3A3A;
+        background:#354024;
         color:#fff;
-        border-color:#8B3A3A;
+        border-color:#354024;
     }
     .amount-grid{
         display:flex;
@@ -270,8 +270,8 @@
     .chip{
         padding:8px 16px;
         border-radius:18px;
-        border:1px solid #C46D66;
-        color:#8B3A3A;
+        border:1px solid #354024;
+        color:#354024;
         background:#fff;
         font-size:13px;
         cursor:pointer;
@@ -291,75 +291,15 @@
         cursor:pointer;
     }
     .btn-cancel{
-        background:#8B3A3A;
+        background:#354024;
         color:#fff;
     }
     .btn-process{
-        background:#E8D5B5;
-        color:#111;
-        border:1px solid #c7b295;
+        background:#efe0cd;
+        color:#354024;
+        border:1px solid #354024;
     }
 
-    /* QRIS Section */
-    .qris-container {
-        display: none; /* Toggled via JS */
-        flex-direction: column;
-        align-items: center;
-        margin-top: 10px;
-        width: 100%;
-    }
-    .qris-card {
-        width: 280px;
-        background: #fff;
-        border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        overflow: hidden;
-        border: 1px solid #e0e0e0;
-    }
-    .qris-header {
-        background: linear-gradient(to right, #ed1c24, #c30f16);
-        padding: 15px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-    .qris-logo-text {
-        color: #fff;
-        font-weight: 800;
-        font-size: 20px;
-        font-style: italic;
-        letter-spacing: 1px;
-    }
-    .qris-body {
-        padding: 20px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-    }
-    .qris-merchant-name {
-        font-weight: 700;
-        font-size: 16px;
-        margin-bottom: 5px;
-        color: #333;
-        text-transform: uppercase;
-    }
-    .qris-nmid {
-        font-size: 12px;
-        color: #666;
-        margin-bottom: 15px;
-    }
-    .qris-img {
-        width: 180px;
-        height: 180px;
-        object-fit: contain;
-        margin-bottom: 10px;
-    }
-    .qris-footer-text {
-        font-size: 11px;
-        color: #888;
-        margin-top: 10px;
-    }
 
     /* Receipt (Struk) Modal */
     .struk-card {
@@ -564,31 +504,9 @@
         <div class="modal-title">Metode Pembayaran</div>
         <div class="method-row" id="methodRow">
             <button class="pill active" data-method="Cash">Cash</button>
-            <button class="pill" data-method="QRIS">QRIS</button>
-            <button class="pill" data-method="Virtual Account">Virtual Account</button>
-            <button class="pill" data-method="Bank Transfer">Bank Transfer</button>
             <button class="pill" data-method="E-Wallet">E-Wallet</button>
         </div>
         <div class="separator"></div>
-        
-        <!-- QRIS Section -->
-        <div id="qrisPaymentSection" class="qris-container">
-            <div class="qris-card">
-                <div class="qris-header">
-                    <div class="qris-logo-text">QRIS</div>
-                    <div style="color:#fff; font-size:12px;">GPN</div>
-                </div>
-                <div class="qris-body">
-                    <div class="qris-merchant-name">Restoran XYZ</div>
-                    <div class="qris-nmid">NMID: ID2023000001</div>
-                    <!-- GANTI SRC DI BAWAH INI DENGAN FILE GAMBAR YANG DIKIRIM -->
-                    <!-- Contoh: src="{{ asset('qris.jpg') }}" jika file ada di public/qris.jpg -->
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PembayaranRestoranXYZ" alt="Scan QRIS" class="qris-img">
-                    <div class="qris-footer-text">Dicetak oleh: Restoran XYZ</div>
-                </div>
-            </div>
-            <div style="font-size:13px; font-weight:600; margin-top:12px; color:#555;">Scan QR code di atas untuk membayar</div>
-        </div>
 
         <!-- Customer Name -->
         <div class="modal-title">Nama Pelanggan</div>
@@ -799,7 +717,6 @@
         const changeLabel = document.getElementById('changeLabel');
         const chips = Array.from(document.querySelectorAll('#amountGrid .chip'));
         const methodButtons = Array.from(document.querySelectorAll('#methodRow .pill'));
-        const qrisSection = document.getElementById('qrisPaymentSection');
         const cashSection = document.getElementById('cashPaymentSection');
         
         let payAmount = 0;
@@ -838,14 +755,9 @@
             });
 
             // Toggle Sections
-            if (method === 'QRIS') {
-                qrisSection.style.display = 'flex';
-                cashSection.style.display = 'none';
-            } else if (method === 'Cash') {
-                qrisSection.style.display = 'none';
+            if (method === 'Cash') {
                 cashSection.style.display = 'block';
             } else {
-                qrisSection.style.display = 'none';
                 cashSection.style.display = 'none';
             }
         }

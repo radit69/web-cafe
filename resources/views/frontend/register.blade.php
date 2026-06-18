@@ -196,8 +196,6 @@
                         <div class="relative flex items-center border-b border-outline-variant focus-within:border-primary transition-colors">
                             <span
                                 class="material-symbols-outlined absolute left-0 top-1/2 -translate-y-1/2 text-outline-variant">call</span>
-                            <span class="pl-8 pr-1 py-3 font-body-md text-body-md text-on-surface-variant select-none whitespace-nowrap">+62</span>
-                            <span class="text-outline-variant/60 select-none">|</span>
                             <input
                                 class="w-full pl-2 pr-4 py-3 bg-transparent border-none focus:ring-0 font-body-md text-body-md outline-none"
                                 id="phone" name="phone" placeholder="812 3456 7890" type="tel" value="{{ old('phone') }}" />

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Menu;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 
 class MenuController extends Controller
 {
@@ -33,8 +34,7 @@ class MenuController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('menu_images', 'public');
-            $data['image'] = $path;
+            $data['image'] = $this->storeMenuImage($request);
         }
 
         Menu::create($data);
@@ -61,8 +61,7 @@ class MenuController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $path = $request->file('image')->store('menu_images', 'public');
-            $data['image'] = $path;
+            $data['image'] = $this->storeMenuImage($request);
         } else {
             unset($data['image']);
         }
@@ -80,6 +79,18 @@ class MenuController extends Controller
         return redirect()->route('admin.menus.index')
             ->with('success', 'Menu berhasil dihapus.');
     }
-}
 
+    private function storeMenuImage(Request $request): string
+    {
+        $file = $request->file('image');
+        $directory = public_path('menu_images');
+
+        File::ensureDirectoryExists($directory);
+
+        $filename = uniqid('menu_', true) . '.' . $file->getClientOriginalExtension();
+        $file->move($directory, $filename);
+
+        return 'menu_images/' . $filename;
+    }
+}
 
