@@ -15,14 +15,14 @@ RUN apt-get update && apt-get install -y \
     unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install \
-        bcmath \
-        gd \
-        intl \
-        mbstring \
-        pdo_mysql \
-        pcntl \
-        zip \
-        opcache \
+    bcmath \
+    gd \
+    intl \
+    mbstring \
+    pdo_mysql \
+    pcntl \
+    zip \
+    opcache \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Enable Apache mod_rewrite
@@ -73,23 +73,23 @@ RUN php artisan config:clear \
 
 # Use a startup script to handle PORT dynamically and force disable duplicate MPMs at runtime
 RUN echo '#!/bin/bash\n\
-# Force delete duplicate MPM configurations if they get re-enabled\n\
-rm -f /etc/apache2/mods-enabled/mpm_event.load\n\
-rm -f /etc/apache2/mods-enabled/mpm_event.conf\n\
-rm -f /etc/apache2/mods-enabled/mpm_worker.load\n\
-rm -f /etc/apache2/mods-enabled/mpm_worker.conf\n\
-a2enmod mpm_prefork || true\n\
-\n\
-# Set port\n\
-sed -i "s/Listen 80/Listen ${PORT:-8080}/" /etc/apache2/ports.conf\n\
-sed -i "s/:80/:${PORT:-8080}/" /etc/apache2/sites-available/000-default.conf\n\
-\n\
-# Run migrations and seed\n\
-php artisan migrate --force || true\n\
-php artisan db:seed --force || true\n\
-\n\
-# Start Apache\n\
-exec apache2-foreground' > /usr/local/bin/start.sh \
+    # Force delete duplicate MPM configurations if they get re-enabled\n\
+    rm -f /etc/apache2/mods-enabled/mpm_event.load\n\
+    rm -f /etc/apache2/mods-enabled/mpm_event.conf\n\
+    rm -f /etc/apache2/mods-enabled/mpm_worker.load\n\
+    rm -f /etc/apache2/mods-enabled/mpm_worker.conf\n\
+    a2enmod mpm_prefork || true\n\
+    \n\
+    # Set port\n\
+    sed -i "s/Listen 80/Listen ${PORT:-8080}/" /etc/apache2/ports.conf\n\
+    sed -i "s/:80/:${PORT:-8080}/" /etc/apache2/sites-available/000-default.conf\n\
+    \n\
+    # Run migrations and seed\n\
+    php artisan migrate --force || true\n\
+    php artisan db:seed --force || true\n\
+    \n\
+    # Start Apache\n\
+    exec apache2-foreground' > /usr/local/bin/start.sh \
     && chmod +x /usr/local/bin/start.sh
 
 EXPOSE 8080

@@ -88,9 +88,9 @@ class MenuController extends Controller
         File::ensureDirectoryExists($directory);
 
         $filename = uniqid('menu_', true) . '.' . $file->getClientOriginalExtension();
-        $file->move($directory, $filename);
+        $file->move($directory, $menuImagePath = $directory . '/' . $filename);
 
-        return 'menu_images/' . $filename;
+        return 'menu_images/' . $menuImagePath;
     }
 }
 
