@@ -269,6 +269,42 @@ class KasirController extends Controller
         return $dompdf->stream('laporan-kasir-' . $date . '.pdf');
     }
 
+    public function orderStatus(Request $request)
+    {
+        $query = Sale::query();
+
+        if ($request->filled('search')) {
+            $search = $request->input('search');
+            $query->where(function($q) use ($search) {
+                $q->where('code', 'like', "%{$search}%")
+                  ->orWhere('customer_name', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('payment_status', $request->input('status'));
+        }
+
+        $sales = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
+
+        return view('backend.kasir.order_status', compact('sales'));
+    }
+
+    public function updateOrderStatus(Request $request, $id)
+    {
+        $sale = Sale::findOrFail($id);
+
+        $request->validate([
+            'payment_status' => ['required', 'string', 'in:pending,settlement,cancel,expire,deny'],
+        ]);
+
+        $sale->update([
+            'payment_status' => $request->input('payment_status'),
+        ]);
+
+        return back()->with('success', 'Status pesanan ' . ($sale->code ?? '#' . $sale->id) . ' berhasil diperbarui.');
+    }
+
     protected function setupMidtrans(): void
     {
         \Midtrans\Config::$serverKey = config('midtrans.server_key');

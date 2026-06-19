@@ -213,6 +213,7 @@
             <li><a href="{{ route('kasir.reservations') }}" class="sidebar-link {{ request()->routeIs('kasir.reservations') ? 'active' : '' }}"><span class="icon"><i class="fa-solid fa-calendar-check"></i></span> Reservasi</a></li>
             <li><a href="{{ route('kasir.report') }}" class="sidebar-link {{ request()->routeIs('kasir.report') ? 'active' : '' }}"><span class="icon"><i class="fa-solid fa-file-lines"></i></span> Laporan</a></li>
             <li><a href="{{ route('kasir.order') }}" class="sidebar-link {{ request()->routeIs('kasir.order') ? 'active' : '' }}"><span class="icon"><i class="fa-solid fa-clipboard-list"></i></span> Pesanan</a></li>
+            <li><a href="{{ route('kasir.order_status') }}" class="sidebar-link {{ request()->routeIs('kasir.order_status') ? 'active' : '' }}"><span class="icon"><i class="fa-solid fa-receipt"></i></span> Status Pesanan</a></li>
             <li>
                 <form action="{{ route('select.role') }}" method="GET" style="display: block; width: 100%;">
                     <button type="submit" class="sidebar-link" style="background:none; border:none; cursor:pointer; width:100%; text-align:left; font-family:inherit;">

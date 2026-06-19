@@ -110,4 +110,6 @@ Route::prefix('kasir')->name('kasir.')->middleware(['auth', 'role:kasir'])->grou
     Route::post('/order/checkout', [KasirController::class, 'orderCheckout'])->name('order.checkout');
     Route::post('/order/midtrans-pay', [KasirController::class, 'midtransPay'])->name('order.midtrans_pay');
     Route::post('/order/confirm-midtrans', [KasirController::class, 'confirmMidtrans'])->name('order.confirm_midtrans');
+    Route::get('/order-status', [KasirController::class, 'orderStatus'])->name('order_status');
+    Route::patch('/order-status/{id}/update', [KasirController::class, 'updateOrderStatus'])->name('order_status.update');
 });

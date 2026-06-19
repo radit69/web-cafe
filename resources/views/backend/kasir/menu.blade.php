@@ -69,10 +69,7 @@
         <div class="menu-grid">
             @foreach($menus as $m)
             <div class="menu-card" data-name="{{ strtolower($m->name) }}" data-cat="{{ $m->category }}">
-                @php
-                    $src = $m->image ? asset('storage/'.$m->image) : 'https://images.unsplash.com/photo-1541167760496-1628856ab772?auto=format&fit=crop&w=300&q=80';
-                @endphp
-                <img src="{{ $src }}" alt="{{ $m->name }}" class="menu-img">
+                <img src="{{ $m->image_url }}" alt="{{ $m->name }}" class="menu-img">
                 <div class="menu-name">{{ $m->name }}</div>
             </div>
             @endforeach
