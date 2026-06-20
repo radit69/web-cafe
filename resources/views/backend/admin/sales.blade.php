@@ -52,7 +52,7 @@
             return [
                 'date' => $sale->created_at,
                 'code' => $sale->code,
-                'customer' => 'Umum (Kasir/Frontend)',
+                'customer' => 'Umum (Kasir)',
                 'type' => 'Penjualan Langsung',
                 'total' => $sale->total,
                 'payment' => $sale->payment_method ?? 'Midtrans',
