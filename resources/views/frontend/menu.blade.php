@@ -81,7 +81,7 @@
                             </div>
 
                             <p class="text-on-surface-variant font-body-md mb-6 line-clamp-2">
-                                Stok tersedia: {{ $menu->stock }}. Menu ini dikelola langsung dari backend.
+                                Menu ini dikelola langsung dari backend.
                             </p>
 
                             <div class="flex items-center justify-between gap-4">

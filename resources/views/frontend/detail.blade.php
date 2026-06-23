@@ -131,7 +131,6 @@
                                     <a href="{{ route('frontend.menu.detail', $relatedMenu) }}">
                                         <h3 class="font-headline-md text-primary mb-1">{{ $relatedMenu->name }}</h3>
                                     </a>
-                                    <p class="text-on-surface-variant font-body-md mb-4">Stok tersedia: {{ $relatedMenu->stock }}</p>
                                     <div class="flex items-center justify-between">
                                         <span class="font-headline-md text-primary">Rp {{ number_format($relatedMenu->price, 0, ',', '.') }}</span>
                                         <span class="font-label-sm px-2 py-1 rounded {{ $relatedAvailable ? 'text-primary bg-primary/10' : 'text-error bg-error/10' }}">
