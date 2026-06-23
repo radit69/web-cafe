@@ -80,9 +80,7 @@
                                 </span>
                             </div>
 
-                            <p class="text-on-surface-variant font-body-md mb-6 line-clamp-2">
-                                Menu ini dikelola langsung dari backend.
-                            </p>
+
 
                             <div class="flex items-center justify-between gap-4">
                                 <span class="font-headline-md text-primary">Rp {{ number_format($menu->price, 0, ',', '.') }}</span>
