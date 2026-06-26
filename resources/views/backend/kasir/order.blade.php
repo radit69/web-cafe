@@ -617,7 +617,7 @@
             if (existing) {
                 existing.qty++;
             } else {
-                cart.push({ name: name, price: price, qty: 1 });
+                cart.push({ name: name, price: price, qty: 1, notes: '' });
             }
             renderCart();
         }
@@ -635,6 +635,12 @@
         function removeItem(index) {
             cart.splice(index, 1);
             renderCart();
+        }
+
+        function updateOrderNotes(index, value) {
+            if (cart[index]) {
+                cart[index].notes = value;
+            }
         }
 
         function resetOrder() {
@@ -667,6 +673,7 @@
                             </div>
                             <div class="oc-price">${formatIDR(item.price)}</div>
                             <div class="oc-subtotal">Subtotal: ${formatIDR(itemTotal)}</div>
+                            <textarea class="dt-input" style="margin-top:8px; width:100%; resize:none;" rows="2" placeholder="Catatan..." oninput="updateOrderNotes(${index}, this.value)">${item.notes || ''}</textarea>
                             <span class="btn-trash" onclick="removeItem(${index})">🗑️</span>
                         </div>
                     `;
@@ -778,7 +785,7 @@
             
             // Prepare payload
             const payload = {
-                items: cart.map(it => ({ name: it.name, qty: it.qty, price: it.price })),
+                items: cart.map(it => ({ name: it.name, qty: it.qty, price: it.price, notes: it.notes || '' })),
                 total: currentGrandTotal,
                 payment_method: selectedMethod,
                 customer_name: customerName,
@@ -908,7 +915,7 @@
                 const html = `
                     <div class="struk-item-row">
                         <div style="width:20px;">${item.qty}</div>
-                        <div class="item-name">${item.name}</div>
+                        <div class="item-name">${item.name}${item.notes ? ' (' + item.notes + ')' : ''}</div>
                         <div class="item-price">${formatIDR(item.price * item.qty)}</div>
                     </div>
                 `;

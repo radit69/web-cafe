@@ -118,6 +118,7 @@ class FrontendController extends Controller
             'items.*.name' => ['required', 'string'],
             'items.*.qty' => ['required', 'integer', 'min:1'],
             'items.*.price' => ['required', 'integer', 'min:0'],
+            'items.*.notes' => ['nullable', 'string', 'max:500'],
         ]);
 
         $total = 0;

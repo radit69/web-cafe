@@ -145,6 +145,9 @@ function renderCart() {
             + '<span class="material-symbols-outlined text-[18px]" data-icon="delete">delete</span> Hapus'
             + '</button>'
             + '</div>'
+            + '<div class="mt-3">'
+            + '<textarea class="w-full bg-surface-container-highest rounded-xl px-4 py-3 font-body-md text-body-md text-on-surface placeholder-on-surface-variant border border-secondary/20 focus:outline-none focus:border-primary resize-none" rows="2" placeholder="Catatan (opsional)..." oninput="updateNotes(' + item.id + ', this.value)">' + (item.notes || '') + '</textarea>'
+            + '</div>'
             + '</div>'
             + '</div>';
     }
@@ -167,7 +170,8 @@ function renderCart() {
         return '<input type="hidden" name="items[' + idx + '][id]" value="' + item.id + '">'
             + '<input type="hidden" name="items[' + idx + '][name]" value="' + item.name + '">'
             + '<input type="hidden" name="items[' + idx + '][qty]" value="' + item.qty + '">'
-            + '<input type="hidden" name="items[' + idx + '][price]" value="' + item.price + '">';
+            + '<input type="hidden" name="items[' + idx + '][price]" value="' + item.price + '">'
+            + '<input type="hidden" name="items[' + idx + '][notes]" value="' + (item.notes || '') + '">';
     }).join('');
 }
 
@@ -176,6 +180,17 @@ function removeFromCart(id) {
     cart = cart.filter(function(item) { return item.id !== id; });
     saveCart(cart);
     renderCart();
+}
+
+function updateNotes(id, value) {
+    var cart = getCart();
+    for (var i = 0; i < cart.length; i++) {
+        if (cart[i].id === id) {
+            cart[i].notes = value;
+            break;
+        }
+    }
+    saveCart(cart);
 }
 
 function updateQty(id, delta) {

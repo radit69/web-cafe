@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (cart[i].id === id) { existing = cart[i]; break; }
         }
         if (existing) { existing.qty += 1; }
-        else { cart.push({ id: id, name: name, price: price, image: image, qty: 1 }); }
+        else { cart.push({ id: id, name: name, price: price, image: image, qty: 1, notes: '' }); }
         localStorage.setItem('pos_cart', JSON.stringify(cart));
         
         // Sync badge globally

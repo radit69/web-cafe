@@ -33,7 +33,12 @@
             <div class="border-t border-secondary/10 pt-4 space-y-3">
                 @foreach ($sale->items ?? [] as $item)
                     <div class="flex justify-between text-on-surface-variant font-body-md">
-                        <span>{{ $item['name'] }} × {{ $item['qty'] }}</span>
+                        <div>
+                            <span>{{ $item['name'] }} × {{ $item['qty'] }}</span>
+                            @if(!empty($item['notes']))
+                                <br><span style="font-size:12px; color:#888; font-style:italic;">Catatan: {{ $item['notes'] }}</span>
+                            @endif
+                        </div>
                         <span>Rp {{ number_format(($item['price'] ?? 0) * ($item['qty'] ?? 0), 0, ',', '.') }}</span>
                     </div>
                 @endforeach

@@ -251,6 +251,9 @@
                                             <span style="font-size:11px; color:#666;">
                                                 (Rp{{ number_format($item['price'], 0, ',', '.') }})
                                             </span>
+                                            @if(!empty($item['notes']))
+                                                <br><span style="font-size:11px; color:#888; font-style:italic;">Catatan: {{ $item['notes'] }}</span>
+                                            @endif
                                         </li>
                                     @endforeach
                                 </ul>
