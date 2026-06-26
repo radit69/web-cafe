@@ -41,6 +41,7 @@ Route::post('/reservasi/{id}/batal', [ReservationController::class, 'cancel'])->
 Route::post('/reservasi/{id}/bayar-dp', [ReservationController::class, 'payDp'])->middleware('auth')->name('frontend.reservation.pay_dp');
 Route::post('/reservasi/{id}/confirm-payment', [ReservationController::class, 'confirmPayment'])->middleware('auth')->name('frontend.reservation.confirm_payment');
 Route::post('/reservasi/{id}/bayar-sisa', [ReservationController::class, 'payRemaining'])->middleware('auth')->name('frontend.reservation.pay_remaining');
+Route::get('/reservasi/available-tables', [ReservationController::class, 'availableTables'])->middleware('auth')->name('frontend.reservation.available_tables');
 Route::get('/status', [ReservationController::class, 'status'])->middleware('auth')->name('frontend.status');
 
 // Keranjang & Checkout

@@ -27,6 +27,34 @@ class ReservationController extends Controller
         return view('frontend.reservation', compact('menus', 'pajak', 'service'));
     }
 
+    public function availableTables(Request $request)
+    {
+        $date = $request->input('date');
+        $time = $request->input('time');
+
+        if (!$date || !$time) {
+            return response()->json(['tables' => []]);
+        }
+
+        $usedTables = Reservation::where('reservation_date', $date)
+            ->where('reservation_time', $time)
+            ->whereNotIn('status', ['cancelled'])
+            ->whereNotNull('table_number')
+            ->pluck('table_number')
+            ->toArray();
+
+        $tables = [];
+        for ($i = 1; $i <= 15; $i++) {
+            $tables[] = [
+                'number' => $i,
+                'available' => !in_array($i, $usedTables),
+                'label' => "Meja $i",
+            ];
+        }
+
+        return response()->json(['tables' => $tables]);
+    }
+
     public function store(Request $request)
     {
         $user = Auth::user();
@@ -36,9 +64,10 @@ class ReservationController extends Controller
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'location' => ['nullable', 'string', 'in:depok,cibubur'],
-            'guests' => ['required', 'integer', 'min:1', 'max:10'],
+            'guests' => ['required', 'integer', 'min:1', 'max:100'],
             'date' => ['required', 'date', 'after_or_equal:today'],
             'time' => ['required', 'date_format:H:i', 'in:12:00,13:00,14:00,15:00,16:00,17:00,18:00,19:00,20:00,20:30'],
+            'table_number' => ['required', 'integer', 'min:1', 'max:15'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'order_items' => ['nullable', 'array'],
             'order_items.*.id' => ['required', 'integer', 'exists:menus,id'],
@@ -73,34 +102,47 @@ class ReservationController extends Controller
             }
         }
 
-        $reservation = DB::transaction(function () use ($data, $orderItems, $grandTotal, $dpAmount, $remainingAmount, $user) {
-            $tableNumber = $this->assignTableNumber($data['date'], $data['time']);
+        try {
+            $reservation = DB::transaction(function () use ($data, $orderItems, $grandTotal, $dpAmount, $remainingAmount, $user) {
+                $isTaken = Reservation::where('reservation_date', $data['date'])
+                    ->where('reservation_time', $data['time'])
+                    ->whereNotIn('status', ['cancelled'])
+                    ->where('table_number', $data['table_number'])
+                    ->lockForUpdate()
+                    ->exists();
 
-            foreach ($orderItems as $item) {
-                Menu::where('id', $item['id'])->where('stock', '>=', $item['qty'])
-                    ->decrement('stock', $item['qty']);
-            }
+                if ($isTaken) {
+                    throw new \Exception('Maaf, meja yang dipilih sudah dipesan. Silakan pilih meja lain.');
+                }
 
-            return Reservation::create([
-                'user_id' => $user?->role === 'pelanggan' ? $user->id : null,
-                'reservation_code' => $this->makeReservationCode(),
-                'customer_name' => $data['name'],
-                'customer_email' => $data['email'] ?? $user?->email,
-                'customer_phone' => $data['phone'] ?? $user?->phone,
-                'guests' => $data['guests'],
-                'reservation_date' => $data['date'],
-                'reservation_time' => $data['time'],
-                'notes' => $data['notes'] ?? null,
-                'table_number' => $tableNumber,
-                'location' => $data['location'] ?? 'depok',
-                'order_items' => $orderItems,
-                'total_amount' => $grandTotal,
-                'dp_amount' => $dpAmount,
-                'dp_status' => 'unpaid',
-                'remaining_amount' => $remainingAmount,
-                'status' => 'pending',
-            ]);
-        });
+                foreach ($orderItems as $item) {
+                    Menu::where('id', $item['id'])->where('stock', '>=', $item['qty'])
+                        ->decrement('stock', $item['qty']);
+                }
+
+                return Reservation::create([
+                    'user_id' => $user?->role === 'pelanggan' ? $user->id : null,
+                    'reservation_code' => $this->makeReservationCode(),
+                    'customer_name' => $data['name'],
+                    'customer_email' => $data['email'] ?? $user?->email,
+                    'customer_phone' => $data['phone'] ?? $user?->phone,
+                    'guests' => $data['guests'],
+                    'reservation_date' => $data['date'],
+                    'reservation_time' => $data['time'],
+                    'notes' => $data['notes'] ?? null,
+                    'table_number' => $data['table_number'],
+                    'location' => $data['location'] ?? 'depok',
+                    'order_items' => $orderItems,
+                    'total_amount' => $grandTotal,
+                    'dp_amount' => $dpAmount,
+                    'dp_status' => 'unpaid',
+                    'remaining_amount' => $remainingAmount,
+                    'status' => 'pending',
+                ]);
+            });
+        } catch (\Exception $e) {
+            return redirect()->back()->withInput()->withErrors(['table_number' => $e->getMessage()]);
+        }
 
         if ($dpAmount > 0) {
             $this->setupMidtrans();

@@ -99,11 +99,7 @@ Jangan lewatkan kesempatan untuk menikmati hidangan dan kopi terbaik kami.
                     </div>
                     <div class="space-y-2">
                         <label class="font-label-sm text-label-sm text-secondary uppercase tracking-widest" for="guests">Jumlah Orang</label>
-                        <select class="w-full bg-transparent border-b border-outline-variant py-3 focus:outline-none focus:border-primary transition-colors font-body-md text-body-md appearance-none" id="guests" name="guests">
-                            @for ($guest = 1; $guest <= 10; $guest++)
-                                <option value="{{ $guest }}" {{ (int) old('guests', 2) === $guest ? 'selected' : '' }}>{{ $guest }} Orang</option>
-                            @endfor
-                        </select>
+                        <input class="w-full bg-transparent border-b border-outline-variant py-3 focus:outline-none focus:border-primary transition-colors font-body-md text-body-md" id="guests" name="guests" type="number" min="1" value="{{ old('guests', 2) }}" required>
                     </div>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
@@ -148,12 +144,10 @@ Jangan lewatkan kesempatan untuk menikmati hidangan dan kopi terbaik kami.
                         </div>
                         <div class="space-y-2">
                             <label class="font-label-sm text-label-sm text-secondary uppercase tracking-widest" for="table_number">Meja</label>
-                            <select class="w-full bg-transparent border-b border-outline-variant py-3 focus:outline-none focus:border-primary transition-colors font-body-md text-body-md appearance-none" id="table_number" name="table_number">
+                            <select class="w-full bg-transparent border-b border-outline-variant py-3 focus:outline-none focus:border-primary transition-colors font-body-md text-body-md appearance-none" id="table_number" name="table_number" required>
                                 <option value="">Pilih Meja</option>
-                                @for ($t = 1; $t <= 15; $t++)
-                                    <option value="{{ $t }}" {{ (int) old('table_number') === $t ? 'selected' : '' }}>Meja {{ $t }}</option>
-                                @endfor
                             </select>
+                            <p id="table-status-msg" class="font-label-sm text-label-sm text-success mt-1 hidden"></p>
                         </div>
                     </div>
                 </div>
@@ -349,11 +343,73 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Sync lokasi dari navigasi
-    const savedLocation = localStorage.getItem('coffith_location') || 'depok';
-    const locationSelect = document.getElementById('location');
-    if (locationSelect && !locationSelect.dataset.userChanged) {
-        locationSelect.value = savedLocation;
+    // Table availability check
+    const tableSelect = document.getElementById('table_number');
+    const tableStatusMsg = document.getElementById('table-status-msg');
+    const dateInput = document.getElementById('date');
+    const timeSelect = document.getElementById('time');
+    let availabilityCheckTimeout;
+
+    function fetchAvailableTables() {
+        const date = dateInput.value;
+        const time = timeSelect.value;
+
+        if (!date || !time) {
+            tableSelect.innerHTML = '<option value="">Pilih Meja</option>';
+            tableSelect.disabled = true;
+            tableStatusMsg.classList.add('hidden');
+            return;
+        }
+
+        tableSelect.disabled = true;
+        tableSelect.innerHTML = '<option value="">Memuat...</option>';
+
+        fetch('{{ route("frontend.reservation.available_tables") }}?date=' + encodeURIComponent(date) + '&time=' + encodeURIComponent(time))
+            .then(res => res.json())
+            .then(data => {
+                tableSelect.innerHTML = '<option value="">Pilih Meja</option>';
+                let hasAvailable = false;
+
+                data.tables.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t.number;
+                    opt.textContent = t.label;
+                    if (t.available) {
+                        opt.textContent += ' \u2714 Available';
+                        hasAvailable = true;
+                    } else {
+                        opt.textContent += ' \u2716 Sudah dipesan';
+                        opt.disabled = true;
+                    }
+                    @if (old('table_number'))
+                        if (t.number === {{ (int) old('table_number') }}) {
+                            opt.selected = true;
+                        }
+                    @endif
+                    tableSelect.appendChild(opt);
+                });
+
+                tableSelect.disabled = false;
+
+                if (!hasAvailable) {
+                    tableStatusMsg.textContent = 'Maaf, semua meja sudah dipesan pada jam ini.';
+                    tableStatusMsg.className = 'font-label-sm text-label-sm text-error mt-1';
+                    tableStatusMsg.classList.remove('hidden');
+                } else {
+                    tableStatusMsg.classList.add('hidden');
+                }
+            })
+            .catch(() => {
+                tableSelect.innerHTML = '<option value="">Gagal memuat data meja</option>';
+                tableSelect.disabled = false;
+            });
+    }
+
+    dateInput.addEventListener('change', fetchAvailableTables);
+    timeSelect.addEventListener('change', fetchAvailableTables);
+
+    if (dateInput.value && timeSelect.value) {
+        fetchAvailableTables();
     }
 });
 </script>

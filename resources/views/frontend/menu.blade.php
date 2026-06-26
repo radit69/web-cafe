@@ -44,7 +44,6 @@
                 <span class="material-symbols-outlined text-primary text-5xl mb-4" data-icon="restaurant_menu">restaurant_menu</span>
                 <h3 class="font-headline-md text-headline-md text-primary mb-3">Menu Belum Tersedia</h3>
                 <p class="text-on-surface-variant font-body-md max-w-xl mx-auto">
-                    Menu yang aktif di backend akan tampil otomatis di halaman ini.
                 </p>
             </section>
         @else
