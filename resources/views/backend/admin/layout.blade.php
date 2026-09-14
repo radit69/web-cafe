@@ -230,7 +230,7 @@
             <li><a href="{{ route('admin.inventory') }}" class="sidebar-link {{ request()->routeIs('admin.inventory') ? 'active' : '' }}"><span class="icon"><i class="fa-solid fa-boxes-stacked"></i></span>Inventori</a></li>
             <li><a href="{{ route('admin.reservations') }}" class="sidebar-link {{ request()->routeIs('admin.reservations') ? 'active' : '' }}"><span class="icon"><i class="fa-solid fa-calendar-check"></i></span>Daftar Reservasi</a></li>
             <li><a href="{{ route('admin.sales') }}" class="sidebar-link {{ request()->routeIs('admin.sales') ? 'active' : '' }}"><span class="icon"><i class="fa-solid fa-file-invoice-dollar"></i></span>Laporan Penjualan</a></li>
-            <li><a href="{{ route('admin.settings') }}" class="sidebar-link {{ request()->routeIs('admin.settings') ? 'active' : '' }}"><span class="icon"><i class="fa-solid fa-gear"></i></span>Pengaturan Sistem</a></li>
+
             <li>
                 <form action="{{ route('select.role') }}" method="GET" style="display: block; width: 100%;">
                     <button type="submit" class="sidebar-link" style="background:none; border:none; cursor:pointer; width:100%; text-align:left; font-family:inherit; font-size: 14px; color: #fbeeea;">
