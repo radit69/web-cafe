@@ -11,14 +11,14 @@ class KasirController extends Controller
 {
     public function menu()
     {
-        $menus = Menu::orderBy('name')->get();
+        $menus = Menu::orderBy('nama_menu')->get();
 
         return view('backend.kasir.menu', compact('menus'));
     }
 
     public function stock()
     {
-        $menus = Menu::orderBy('name')->get();
+        $menus = Menu::orderBy('nama_menu')->get();
 
         return view('backend.kasir.stock', compact('menus'));
     }
@@ -26,15 +26,15 @@ class KasirController extends Controller
     public function stockRestock(Request $request)
     {
         $data = $request->validate([
-            'menu_id' => ['required', 'exists:menus,id'],
+            'menu_id' => ['required', 'exists:menu,id'],
             'amount'  => ['required', 'integer', 'min:1'],
         ]);
 
         $menu = Menu::findOrFail($data['menu_id']);
-        $menu->increment('stock', $data['amount']);
+        $menu->increment('stok', $data['amount']);
 
         return redirect()->route('kasir.stock')
-            ->with('success', 'Stok berhasil ditambahkan untuk ' . $menu->name);
+            ->with('success', 'Stok berhasil ditambahkan untuk ' . $menu->nama_menu);
     }
 
     public function report(Request $request)
@@ -43,16 +43,16 @@ class KasirController extends Controller
 
         $sales = Sale::whereDate('created_at', $date)->get();
 
-        $reservations = Reservation::whereDate('reservation_date', $date)
-            ->whereIn('status', ['confirmed', 'completed'])
+        $reservations = Reservation::whereDate('tanggal_reservasi', $date)
+            ->whereIn('status_reservasi', ['confirmed', 'completed'])
             ->get();
 
-        $allReservations = Reservation::whereDate('reservation_date', $date)->get();
+        $allReservations = Reservation::whereDate('tanggal_reservasi', $date)->get();
 
         $dailySalesItems = [];
 
         foreach ($sales as $sale) {
-            $items = $sale->items;
+            $items = $sale->daftar_item;
             if (is_array($items)) {
                 foreach ($items as $item) {
                     $dailySalesItems[] = [
@@ -61,33 +61,33 @@ class KasirController extends Controller
                         'qty' => $item['qty'] ?? 1,
                         'price' => $item['price'] ?? 0,
                         'total' => ($item['qty'] ?? 1) * ($item['price'] ?? 0),
-                        'payment' => ucfirst($sale->payment_method ?? 'Cash'),
+                        'payment' => ucfirst($sale->metode_pembayaran ?? 'Cash'),
                     ];
                 }
             }
         }
 
         foreach ($reservations as $res) {
-            $items = $res->order_items;
+            $items = $res->item_pesanan;
             if (is_array($items) && count($items) > 0) {
                 foreach ($items as $item) {
                     $dailySalesItems[] = [
                         'product' => $item['name'] ?? 'Unknown',
-                        'customer' => $res->customer_name,
+                        'customer' => $res->nama_pelanggan,
                         'qty' => $item['qty'] ?? 1,
                         'price' => $item['price'] ?? 0,
                         'total' => ($item['qty'] ?? 1) * ($item['price'] ?? 0),
-                        'payment' => 'Reservasi (DP: ' . ucfirst($res->dp_status) . ')',
+                        'payment' => 'Reservasi (DP: ' . ucfirst($res->status_dp) . ')',
                     ];
                 }
             } else {
                 $dailySalesItems[] = [
                     'product' => 'Reservasi Meja',
-                    'customer' => $res->customer_name,
+                    'customer' => $res->nama_pelanggan,
                     'qty' => 1,
-                    'price' => $res->total_amount,
-                    'total' => $res->total_amount,
-                    'payment' => 'Reservasi (DP: ' . ucfirst($res->dp_status) . ')',
+                    'price' => $res->total_harga,
+                    'total' => $res->total_harga,
+                    'payment' => 'Reservasi (DP: ' . ucfirst($res->status_dp) . ')',
                 ];
             }
         }
@@ -97,7 +97,7 @@ class KasirController extends Controller
 
     public function order()
     {
-        $menus = Menu::orderBy('name')->get();
+        $menus = Menu::orderBy('nama_menu')->get();
 
         return view('backend.kasir.order', compact('menus'));
     }
@@ -118,19 +118,20 @@ class KasirController extends Controller
         ]);
 
         foreach ($data['items'] as $it) {
-            $menu = Menu::where('name', $it['name'])->first();
+            $menu = Menu::where('nama_menu', $it['name'])->first();
             if ($menu) {
-                $menu->decrement('stock', $it['qty']);
+                $menu->decrement('stok', $it['qty']);
             }
         }
 
         $sale = Sale::create([
-            'items' => $data['items'],
+            'user_id' => auth()->id(),
+            'daftar_item' => $data['items'],
             'total' => $data['total'],
-            'payment_method' => $data['payment_method'] ?? null,
-            'customer_name' => $data['customer_name'] ?? null,
-            'amount_paid' => $data['amount_paid'] ?? 0,
-            'change' => $data['change'] ?? 0,
+            'metode_pembayaran' => $data['payment_method'] ?? null,
+            'nama_pelanggan' => $data['customer_name'] ?? null,
+            'jumlah_bayar' => $data['amount_paid'] ?? 0,
+            'kembalian' => $data['change'] ?? 0,
         ]);
 
         return response()->json(['ok' => true, 'sale_id' => $sale->id]);
@@ -139,20 +140,20 @@ class KasirController extends Controller
     public function midtransPay(Request $request)
     {
         $data = $request->validate([
-            'sale_id' => ['required', 'integer', 'exists:sales,id'],
+            'sale_id' => ['required', 'integer', 'exists:penjualan,id'],
         ]);
 
         $sale = Sale::findOrFail($data['sale_id']);
 
-        if (!$sale->code) {
-            $sale->update(['code' => Sale::generateCode()]);
+        if (!$sale->kode) {
+            $sale->update(['kode' => Sale::generateCode()]);
             $sale->refresh();
         }
 
         $this->setupMidtrans();
 
         $itemDetails = [];
-        foreach ($sale->items as $item) {
+        foreach ($sale->daftar_item as $item) {
             $itemDetails[] = [
                 'id' => $item['name'],
                 'price' => (int) $item['price'],
@@ -163,7 +164,7 @@ class KasirController extends Controller
 
         $params = [
             'transaction_details' => [
-                'order_id' => $sale->code,
+                'order_id' => $sale->kode,
                 'gross_amount' => (int) $sale->total,
             ],
             'item_details' => $itemDetails,
@@ -185,21 +186,21 @@ class KasirController extends Controller
     public function confirmMidtrans(Request $request)
     {
         $data = $request->validate([
-            'sale_id' => ['required', 'integer', 'exists:sales,id'],
+            'sale_id' => ['required', 'integer', 'exists:penjualan,id'],
         ]);
 
         $sale = Sale::findOrFail($data['sale_id']);
 
-        if ($sale->payment_status === 'settlement') {
+        if ($sale->status_pembayaran === 'settlement') {
             return response()->json(['ok' => true]);
         }
 
         try {
             $this->setupMidtrans();
-            $status = \Midtrans\Transaction::status($sale->code);
+            $status = \Midtrans\Transaction::status($sale->kode);
             $txStatus = $status->transaction_status ?? '';
             if (in_array($txStatus, ['settlement', 'capture'])) {
-                $sale->update(['payment_status' => 'settlement']);
+                $sale->update(['status_pembayaran' => 'settlement']);
                 return response()->json(['ok' => true]);
             }
             return response()->json(['ok' => false, 'status' => $txStatus]);
@@ -213,50 +214,50 @@ class KasirController extends Controller
         $date = request('date', today()->toDateString());
 
         $sales = Sale::whereDate('created_at', $date)->get();
-        $reservations = Reservation::whereDate('reservation_date', $date)
-            ->whereIn('status', ['confirmed', 'completed'])
+        $reservations = Reservation::whereDate('tanggal_reservasi', $date)
+            ->whereIn('status_reservasi', ['confirmed', 'completed'])
             ->get();
-        $allReservations = Reservation::whereDate('reservation_date', $date)->get();
+        $allReservations = Reservation::whereDate('tanggal_reservasi', $date)->get();
 
         $dailySalesItems = [];
 
         foreach ($sales as $sale) {
-            $items = $sale->items;
+            $items = $sale->daftar_item;
             if (is_array($items)) {
                 foreach ($items as $item) {
                     $dailySalesItems[] = [
-                        'customer' => $sale->customer_name ?? 'Umum',
+                        'customer' => $sale->nama_pelanggan ?? 'Umum',
                         'product' => $item['name'] ?? 'Unknown',
                         'qty' => $item['qty'] ?? 1,
                         'price' => $item['price'] ?? 0,
                         'total' => ($item['qty'] ?? 1) * ($item['price'] ?? 0),
-                        'payment' => ucfirst($sale->payment_method ?? 'Cash'),
+                        'payment' => ucfirst($sale->metode_pembayaran ?? 'Cash'),
                     ];
                 }
             }
         }
 
         foreach ($reservations as $res) {
-            $items = $res->order_items;
+            $items = $res->item_pesanan;
             if (is_array($items) && count($items) > 0) {
                 foreach ($items as $item) {
                     $dailySalesItems[] = [
-                        'customer' => $res->customer_name,
+                        'customer' => $res->nama_pelanggan,
                         'product' => $item['name'] ?? 'Unknown',
                         'qty' => $item['qty'] ?? 1,
                         'price' => $item['price'] ?? 0,
                         'total' => ($item['qty'] ?? 1) * ($item['price'] ?? 0),
-                        'payment' => 'Reservasi (' . ucfirst($res->dp_status) . ')',
+                        'payment' => 'Reservasi (' . ucfirst($res->status_dp) . ')',
                     ];
                 }
             } else {
                 $dailySalesItems[] = [
-                    'customer' => $res->customer_name,
+                    'customer' => $res->nama_pelanggan,
                     'product' => 'Reservasi Meja',
                     'qty' => 1,
-                    'price' => $res->total_amount,
-                    'total' => $res->total_amount,
-                    'payment' => 'Reservasi (' . ucfirst($res->dp_status) . ')',
+                    'price' => $res->total_harga,
+                    'total' => $res->total_harga,
+                    'payment' => 'Reservasi (' . ucfirst($res->status_dp) . ')',
                 ];
             }
         }
@@ -277,13 +278,13 @@ class KasirController extends Controller
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function($q) use ($search) {
-                $q->where('code', 'like', "%{$search}%")
-                  ->orWhere('customer_name', 'like', "%{$search}%");
+                $q->where('kode', 'like', "%{$search}%")
+                  ->orWhere('nama_pelanggan', 'like', "%{$search}%");
             });
         }
 
         if ($request->filled('status')) {
-            $query->where('payment_status', $request->input('status'));
+            $query->where('status_pembayaran', $request->input('status'));
         }
 
         $sales = $query->orderByDesc('created_at')->paginate(15)->withQueryString();
@@ -300,10 +301,10 @@ class KasirController extends Controller
         ]);
 
         $sale->update([
-            'payment_status' => $request->input('payment_status'),
+            'status_pembayaran' => $request->input('payment_status'),
         ]);
 
-        return back()->with('success', 'Status pesanan ' . ($sale->code ?? '#' . $sale->id) . ' berhasil diperbarui.');
+        return back()->with('success', 'Status pesanan ' . ($sale->kode ?? '#' . $sale->id) . ' berhasil diperbarui.');
     }
 
     protected function setupMidtrans(): void

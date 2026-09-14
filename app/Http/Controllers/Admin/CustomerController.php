@@ -17,8 +17,8 @@ class CustomerController extends Controller
 
         $stats = [
             'total' => (clone $baseQuery)->count(),
-            'active' => (clone $baseQuery)->where('is_active', true)->count(),
-            'inactive' => (clone $baseQuery)->where('is_active', false)->count(),
+            'active' => (clone $baseQuery)->where('is_aktif', true)->count(),
+            'inactive' => (clone $baseQuery)->where('is_aktif', false)->count(),
             'new_this_month' => (clone $baseQuery)->whereMonth('created_at', now()->month)
                 ->whereYear('created_at', now()->year)
                 ->count(),
@@ -29,18 +29,18 @@ class CustomerController extends Controller
                 $keyword = $request->string('q')->toString();
 
                 $query->where(function ($inner) use ($keyword) {
-                    $inner->where('name', 'like', "%{$keyword}%")
+                    $inner->where('nama', 'like', "%{$keyword}%")
                         ->orWhere('email', 'like', "%{$keyword}%")
-                        ->orWhere('phone', 'like', "%{$keyword}%");
+                        ->orWhere('no_hp', 'like', "%{$keyword}%");
                 });
             })
             ->when($request->filled('status'), function ($query) use ($request) {
                 if ($request->status === 'active') {
-                    $query->where('is_active', true);
+                    $query->where('is_aktif', true);
                 }
 
                 if ($request->status === 'inactive') {
-                    $query->where('is_active', false);
+                    $query->where('is_aktif', false);
                 }
             })
             ->latest()
@@ -57,7 +57,7 @@ class CustomerController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $requestData = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:30'],
@@ -65,8 +65,14 @@ class CustomerController extends Controller
             'is_active' => ['required', 'boolean'],
         ]);
 
-        $data['role'] = 'pelanggan';
-        $data['password'] = Hash::make($data['password'] ?: Str::random(16));
+        $data = [
+            'nama' => $requestData['name'],
+            'email' => $requestData['email'],
+            'no_hp' => $requestData['phone'] ?? null,
+            'password' => Hash::make($requestData['password'] ?: Str::random(16)),
+            'role' => 'pelanggan',
+            'is_aktif' => $requestData['is_active'],
+        ];
 
         User::create($data);
 
@@ -85,7 +91,7 @@ class CustomerController extends Controller
     {
         abort_unless($customer->role === 'pelanggan', 404);
 
-        $data = $request->validate([
+        $requestData = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email,'.$customer->id],
             'phone' => ['nullable', 'string', 'max:30'],
@@ -93,10 +99,15 @@ class CustomerController extends Controller
             'is_active' => ['required', 'boolean'],
         ]);
 
-        if (! empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
-        } else {
-            unset($data['password']);
+        $data = [
+            'nama' => $requestData['name'],
+            'email' => $requestData['email'],
+            'no_hp' => $requestData['phone'] ?? null,
+            'is_aktif' => $requestData['is_active'],
+        ];
+
+        if (! empty($requestData['password'])) {
+            $data['password'] = Hash::make($requestData['password']);
         }
 
         $customer->update($data);
@@ -119,7 +130,7 @@ class CustomerController extends Controller
     {
         abort_unless($customer->role === 'pelanggan', 404);
 
-        $customer->update(['is_active' => ! $customer->is_active]);
+        $customer->update(['is_aktif' => ! $customer->is_aktif]);
 
         return redirect()->route('admin.customers.index')
             ->with('success', 'Status customer berhasil diperbarui.');
@@ -127,7 +138,7 @@ class CustomerController extends Controller
 
     public function export(): StreamedResponse
     {
-        $customers = User::where('role', 'pelanggan')->orderBy('name')->get();
+        $customers = User::where('role', 'pelanggan')->orderBy('nama')->get();
 
         return response()->streamDownload(function () use ($customers) {
             $handle = fopen('php://output', 'w');
@@ -135,12 +146,12 @@ class CustomerController extends Controller
 
             foreach ($customers as $customer) {
                 fputcsv($handle, [
-                    $customer->name,
+                    $customer->nama,
                     $customer->email,
-                    $customer->phone,
-                    $customer->is_active ? 'Aktif' : 'Nonaktif',
+                    $customer->no_hp,
+                    $customer->is_aktif ? 'Aktif' : 'Nonaktif',
                     optional($customer->created_at)->format('Y-m-d H:i:s'),
-                    optional($customer->last_login_at)->format('Y-m-d H:i:s'),
+                    optional($customer->login_terakhir)->format('Y-m-d H:i:s'),
                 ]);
             }
 

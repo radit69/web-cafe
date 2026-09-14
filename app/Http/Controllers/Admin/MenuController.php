@@ -5,13 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Menu;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\File;
 
 class MenuController extends Controller
 {
     public function index()
     {
-        $menus = Menu::orderBy('name')->get();
+        $menus = Menu::orderBy('nama_menu')->get();
 
         return view('backend.admin.menu', compact('menus'));
     }
@@ -23,7 +22,7 @@ class MenuController extends Controller
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $requestData = $request->validate([
             'name'        => ['required', 'string', 'max:255'],
             'category'    => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -33,8 +32,17 @@ class MenuController extends Controller
             'status'      => ['required', 'in:tersedia,habis,nonaktif'],
         ]);
 
+        $data = [
+            'nama_menu' => $requestData['name'],
+            'kategori' => $requestData['category'],
+            'deskripsi' => $requestData['description'] ?? null,
+            'harga' => $requestData['price'],
+            'stok' => $requestData['stock'],
+            'status' => $requestData['status'],
+        ];
+
         if ($request->hasFile('image')) {
-            $data['image'] = $this->storeMenuImage($request);
+            $data['gambar'] = $this->storeMenuImage($request);
         }
 
         Menu::create($data);
@@ -50,7 +58,7 @@ class MenuController extends Controller
 
     public function update(Request $request, Menu $menu)
     {
-        $data = $request->validate([
+        $requestData = $request->validate([
             'name'        => ['required', 'string', 'max:255'],
             'category'    => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string', 'max:1000'],
@@ -60,10 +68,17 @@ class MenuController extends Controller
             'status'      => ['required', 'in:tersedia,habis,nonaktif'],
         ]);
 
+        $data = [
+            'nama_menu' => $requestData['name'],
+            'kategori' => $requestData['category'],
+            'deskripsi' => $requestData['description'] ?? null,
+            'harga' => $requestData['price'],
+            'stok' => $requestData['stock'],
+            'status' => $requestData['status'],
+        ];
+
         if ($request->hasFile('image')) {
-            $data['image'] = $this->storeMenuImage($request);
-        } else {
-            unset($data['image']);
+            $data['gambar'] = $this->storeMenuImage($request);
         }
 
         $menu->update($data);

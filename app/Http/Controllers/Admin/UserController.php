@@ -14,9 +14,9 @@ class UserController extends Controller
     {
         $search = $request->query('search');
 
-        $users = User::when($search, fn ($q) => $q->where('name', 'like', "%{$search}%")
+        $users = User::when($search, fn ($q) => $q->where('nama', 'like', "%{$search}%")
             ->orWhere('email', 'like', "%{$search}%"))
-            ->orderBy('name')
+            ->orderBy('nama')
             ->get();
 
         return view('backend.admin.users', compact('users', 'search'));
@@ -33,7 +33,7 @@ class UserController extends Controller
             'email' => strtolower(trim((string) $request->input('email'))),
         ]);
 
-        $data = $request->validate([
+        $requestData = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
             'email'     => ['required', 'string', 'max:255', Rule::unique('users', 'email')],
             'password'  => ['required', 'string', 'min:6'],
@@ -43,7 +43,13 @@ class UserController extends Controller
             'email.unique' => 'Id User / email ini sudah digunakan. Pakai email atau kode lain.',
         ]);
 
-        $data['password'] = bcrypt($data['password']);
+        $data = [
+            'nama' => $requestData['name'],
+            'email' => $requestData['email'],
+            'password' => bcrypt($requestData['password']),
+            'role' => $requestData['role'],
+            'is_aktif' => $requestData['is_active'],
+        ];
 
         try {
             User::create($data);
@@ -72,7 +78,7 @@ class UserController extends Controller
             'email' => strtolower(trim((string) $request->input('email'))),
         ]);
 
-        $data = $request->validate([
+        $requestData = $request->validate([
             'name'      => ['required', 'string', 'max:255'],
             'email'     => ['required', 'string', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'role'      => ['required', 'in:admin,kasir,pelanggan'],
@@ -82,10 +88,15 @@ class UserController extends Controller
             'email.unique' => 'Id User / email ini sudah digunakan. Pakai email atau kode lain.',
         ]);
 
-        if (!empty($data['password'])) {
-            $data['password'] = bcrypt($data['password']);
-        } else {
-            unset($data['password']);
+        $data = [
+            'nama' => $requestData['name'],
+            'email' => $requestData['email'],
+            'role' => $requestData['role'],
+            'is_aktif' => $requestData['is_active'],
+        ];
+
+        if (!empty($requestData['password'])) {
+            $data['password'] = bcrypt($requestData['password']);
         }
 
         try {

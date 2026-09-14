@@ -39,9 +39,9 @@ class AuthController extends Controller
 
         $username = $request->input('username');
         $user = User::whereIn('role', ['admin', 'kasir'])
-            ->where('is_active', true)
+            ->where('is_aktif', true)
             ->where(function ($q) use ($username) {
-                $q->where('name', $username)->orWhere('email', $username);
+                $q->where('nama', $username)->orWhere('email', $username);
             })
             ->first();
 
@@ -53,7 +53,7 @@ class AuthController extends Controller
 
         Auth::login($user);
 
-        $user->update(['last_login_at' => now()]);
+        $user->update(['login_terakhir' => now()]);
 
         if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard');
@@ -87,7 +87,7 @@ class AuthController extends Controller
                 ->with('info', 'Email belum terdaftar. Silakan daftar terlebih dahulu.');
         }
 
-        if (! $user->is_active || ! Hash::check($credentials['password'], $user->password)) {
+        if (! $user->is_aktif || ! Hash::check($credentials['password'], $user->password)) {
             return back()
                 ->withInput($request->only('email'))
                 ->withErrors(['email' => 'Email atau kata sandi customer tidak valid.']);
@@ -95,7 +95,7 @@ class AuthController extends Controller
 
         Auth::login($user, true);
 
-        $user->update(['last_login_at' => now()]);
+        $user->update(['login_terakhir' => now()]);
 
         return redirect()->route('frontend.reservation');
     }
@@ -110,13 +110,13 @@ class AuthController extends Controller
         ]);
 
         $user = User::create([
-            'name' => $data['name'],
+            'nama' => $data['name'],
             'email' => $data['email'],
-            'phone' => !empty($data['phone']) ? '+62' . ltrim($data['phone']) : null,
+            'no_hp' => !empty($data['phone']) ? '+62' . ltrim($data['phone']) : null,
             'password' => Hash::make($data['password']),
             'role' => 'pelanggan',
-            'is_active' => true,
-            'last_login_at' => now(),
+            'is_aktif' => true,
+            'login_terakhir' => now(),
         ]);
 
         Auth::login($user, true);
@@ -141,7 +141,7 @@ class AuthController extends Controller
                 'name.max' => 'Nama maksimal 255 karakter.',
             ]);
 
-            $user->update(['name' => $request->input('name')]);
+            $user->update(['nama' => $request->input('name')]);
 
             return back()->with('success', 'Nama berhasil diperbarui.');
         }
@@ -241,20 +241,20 @@ class AuthController extends Controller
                 'google_id' => $googleUser['sub'],
                 'avatar' => $googleUser['picture'] ?? $user->avatar,
                 'email_verified_at' => now(),
-                'is_active' => true,
-                'last_login_at' => now(),
+                'is_aktif' => true,
+                'login_terakhir' => now(),
             ]);
         } else {
             $user = User::create([
-                'name' => $googleUser['name'] ?? Str::before($googleUser['email'], '@'),
+                'nama' => $googleUser['name'] ?? Str::before($googleUser['email'], '@'),
                 'email' => $googleUser['email'],
                 'google_id' => $googleUser['sub'],
                 'avatar' => $googleUser['picture'] ?? null,
                 'email_verified_at' => now(),
                 'password' => Hash::make(Str::random(32)),
                 'role' => 'pelanggan',
-                'is_active' => true,
-                'last_login_at' => now(),
+                'is_aktif' => true,
+                'login_terakhir' => now(),
             ]);
         }
 

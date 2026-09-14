@@ -4,28 +4,26 @@ namespace App\Http\Controllers;
 
 use App\Models\Menu;
 use App\Models\Sale;
-use App\Models\Setting;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class FrontendController extends Controller
 {
     public function home()
     {
         $menus = Menu::where('status', '!=', 'nonaktif')
-            ->orderBy('category')
-            ->orderBy('name')
+            ->orderBy('kategori')
+            ->orderBy('nama_menu')
             ->get();
 
         $categories = Menu::where('status', '!=', 'nonaktif')
-            ->whereNotNull('category')
-            ->select('category')
+            ->whereNotNull('kategori')
+            ->select('kategori')
             ->distinct()
-            ->orderBy('category')
-            ->pluck('category');
+            ->orderBy('kategori')
+            ->pluck('kategori');
 
         $firstCategory = $categories->first();
-        $featured = $menus->where('category', $firstCategory)->take(3);
+        $featured = $menus->where('kategori', $firstCategory)->take(3);
         if ($featured->count() < 3) {
             $featured = $menus->take(3);
         }
@@ -39,18 +37,18 @@ class FrontendController extends Controller
 
         $menus = Menu::query()
             ->where('status', '!=', 'nonaktif')
-            ->when($category, fn ($query) => $query->where('category', $category))
-            ->orderBy('category')
-            ->orderBy('name')
+            ->when($category, fn ($query) => $query->where('kategori', $category))
+            ->orderBy('kategori')
+            ->orderBy('nama_menu')
             ->get();
 
         $categories = Menu::query()
             ->where('status', '!=', 'nonaktif')
-            ->whereNotNull('category')
-            ->select('category')
+            ->whereNotNull('kategori')
+            ->select('kategori')
             ->distinct()
-            ->orderBy('category')
-            ->pluck('category');
+            ->orderBy('kategori')
+            ->pluck('kategori');
 
         return view('frontend.menu', compact('menus', 'categories', 'category'));
     }
@@ -61,39 +59,39 @@ class FrontendController extends Controller
 
         $relatedMenus = Menu::where('status', '!=', 'nonaktif')
             ->where('id', '!=', $menu->id)
-            ->when($menu->category, fn ($query) => $query->where('category', $menu->category))
-            ->orderBy('name')
+            ->when($menu->kategori, fn ($query) => $query->where('kategori', $menu->kategori))
+            ->orderBy('nama_menu')
             ->take(3)
             ->get();
 
         if ($relatedMenus->isEmpty()) {
             $relatedMenus = Menu::where('status', '!=', 'nonaktif')
                 ->where('id', '!=', $menu->id)
-                ->orderBy('name')
+                ->orderBy('nama_menu')
                 ->take(3)
                 ->get();
         }
 
         $topMenus = Menu::where('status', '!=', 'nonaktif')
-            ->orderByDesc('stock')
-            ->orderBy('name')
+            ->orderByDesc('stok')
+            ->orderBy('nama_menu')
             ->take(3)
             ->get();
 
         $categories = Menu::query()
             ->where('status', '!=', 'nonaktif')
-            ->whereNotNull('category')
-            ->select('category')
+            ->whereNotNull('kategori')
+            ->select('kategori')
             ->distinct()
-            ->orderBy('category')
-            ->pluck('category');
+            ->orderBy('kategori')
+            ->pluck('kategori');
 
         return view('frontend.detail', compact('menu', 'relatedMenus', 'topMenus', 'categories'));
     }
 
     public function menuDetailRedirect()
     {
-        $menu = Menu::where('status', '!=', 'nonaktif')->orderBy('name')->first();
+        $menu = Menu::where('status', '!=', 'nonaktif')->orderBy('nama_menu')->first();
 
         if (!$menu) {
             return redirect()->route('frontend.menu');
@@ -104,8 +102,8 @@ class FrontendController extends Controller
 
     public function cart()
     {
-        $pajak = Setting::getValue('pajak', '10');
-        $service = Setting::getValue('service', '5');
+        $pajak = '10';
+        $service = '5';
 
         return view('frontend.cart', compact('pajak', 'service'));
     }
@@ -114,7 +112,7 @@ class FrontendController extends Controller
     {
         $data = $request->validate([
             'items' => ['required', 'array', 'min:1'],
-            'items.*.id' => ['required', 'integer', 'exists:menus,id'],
+            'items.*.id' => ['required', 'integer', 'exists:menu,id'],
             'items.*.name' => ['required', 'string'],
             'items.*.qty' => ['required', 'integer', 'min:1'],
             'items.*.price' => ['required', 'integer', 'min:0'],
@@ -124,25 +122,26 @@ class FrontendController extends Controller
         $total = 0;
         foreach ($data['items'] as $item) {
             $menu = Menu::findOrFail($item['id']);
-            if ($menu->stock < $item['qty']) {
-                return back()->with('error', "Stok {$menu->name} tidak mencukupi. Sisa: {$menu->stock}.");
+            if ($menu->stok < $item['qty']) {
+                return back()->with('error', "Stok {$menu->nama_menu} tidak mencukupi. Sisa: {$menu->stok}.");
             }
-            $menu->decrement('stock', $item['qty']);
+            $menu->decrement('stok', $item['qty']);
             $total += $item['price'] * $item['qty'];
         }
 
-        $pajakRate = (float) Setting::getValue('pajak', '10');
-        $serviceRate = (float) Setting::getValue('service', '5');
+        $pajakRate = (float) '10';
+        $serviceRate = (float) '5';
         $pajak = round($total * $pajakRate / 100);
         $serviceFee = round($total * $serviceRate / 100);
         $grandTotal = $total + $pajak + $serviceFee;
 
         $sale = Sale::create([
-            'code' => Sale::generateCode(),
-            'items' => $data['items'],
+            'user_id' => auth()->id(),
+            'kode' => Sale::generateCode(),
+            'daftar_item' => $data['items'],
             'total' => $grandTotal,
-            'payment_method' => 'midtrans',
-            'payment_status' => 'pending',
+            'metode_pembayaran' => 'midtrans',
+            'status_pembayaran' => 'pending',
         ]);
 
         $this->setupMidtrans();
@@ -165,7 +164,7 @@ class FrontendController extends Controller
 
         $params = [
             'transaction_details' => [
-                'order_id' => $sale->code,
+                'order_id' => $sale->kode,
                 'gross_amount' => $grandTotal,
             ],
             'item_details' => $itemDetails,
@@ -188,26 +187,26 @@ class FrontendController extends Controller
         $orderId = $request->query('order_id');
         $transactionStatus = $request->query('transaction_status');
 
-        $sale = $orderId ? Sale::where('code', $orderId)->first() : null;
+        $sale = $orderId ? Sale::where('kode', $orderId)->first() : null;
 
-        if ($sale && $sale->payment_status === 'pending' && in_array($transactionStatus, ['settlement', 'capture'])) {
-            $sale->update(['payment_status' => 'settlement']);
+        if ($sale && $sale->status_pembayaran === 'pending' && in_array($transactionStatus, ['settlement', 'capture'])) {
+            $sale->update(['status_pembayaran' => 'settlement']);
         }
 
-        if ($sale && $sale->payment_status === 'pending') {
+        if ($sale && $sale->status_pembayaran === 'pending') {
             try {
                 $this->setupMidtrans();
-                $status = \Midtrans\Transaction::status($sale->code);
+                $status = \Midtrans\Transaction::status($sale->kode);
                 $txStatus = $status->transaction_status ?? '';
                 if (in_array($txStatus, ['settlement', 'capture'])) {
-                    $sale->update(['payment_status' => 'settlement']);
+                    $sale->update(['status_pembayaran' => 'settlement']);
                 }
             } catch (\Exception $e) {
             }
         }
 
-        $pajak = Setting::getValue('pajak', '10');
-        $service = Setting::getValue('service', '5');
+        $pajak = '10';
+        $service = '5';
 
         return view('frontend.cart_finish', compact('sale', 'pajak', 'service'));
     }
@@ -220,7 +219,7 @@ class FrontendController extends Controller
         $status = $notification->transaction_status;
         $orderId = $notification->order_id;
 
-        $sale = Sale::where('code', $orderId)->first();
+        $sale = Sale::where('kode', $orderId)->first();
         if (!$sale) {
             return response('OK', 200);
         }
@@ -235,7 +234,7 @@ class FrontendController extends Controller
         ];
 
         $newStatus = $statusMap[$status] ?? 'pending';
-        $sale->update(['payment_status' => $newStatus]);
+        $sale->update(['status_pembayaran' => $newStatus]);
 
         return response('OK', 200);
     }

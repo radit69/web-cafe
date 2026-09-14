@@ -92,9 +92,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', 'role:admin'])->grou
     Route::get('/reservations', [ReservationController::class, 'backendIndex'])->name('reservations');
     Route::delete('/reservations/{id}', [ReservationController::class, 'destroy'])->name('reservations.destroy');
     Route::patch('/reservations/{id}/status', [ReservationController::class, 'updateStatusBackend'])->name('reservations.update_status');
-
-    Route::get('/settings', [AdminDashboardController::class, 'settings'])->name('settings');
-    Route::post('/settings', [AdminDashboardController::class, 'settingsSave'])->name('settings.save');
 });
 
 // Kasir (wajib login & role kasir)

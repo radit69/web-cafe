@@ -6,9 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Menu;
 use App\Models\Reservation;
 use App\Models\Sale;
-use App\Models\Setting;
 use App\Models\User;
-use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -74,33 +72,5 @@ class DashboardController extends Controller
         $dompdf->setPaper('A4', 'landscape');
         $dompdf->render();
         return $dompdf->stream('laporan-penjualan-' . $from . '-sampai-' . $to . '.pdf');
-    }
-
-    public function settings()
-    {
-        $pajak = Setting::getValue('pajak', '10');
-        $service = Setting::getValue('service', '5');
-        $jamBuka = Setting::getValue('jam_buka', '08:00');
-        $jamTutup = Setting::getValue('jam_tutup', '21:00');
-        $pelunasanHMin = Setting::getValue('pelunasan_h_min', '1');
-
-        return view('backend.admin.settings', compact('pajak', 'service', 'jamBuka', 'jamTutup', 'pelunasanHMin'));
-    }
-
-    public function settingsSave(Request $request)
-    {
-        $data = $request->validate([
-            'jam_buka' => ['required', 'date_format:H:i'],
-            'jam_tutup' => ['required', 'date_format:H:i'],
-            'pajak' => ['required', 'numeric', 'min:0', 'max:100'],
-            'service' => ['required', 'numeric', 'min:0', 'max:100'],
-            'pelunasan_h_min' => ['required', 'integer', 'min:0', 'max:30'],
-        ]);
-
-        foreach ($data as $key => $value) {
-            Setting::setValue($key, $value);
-        }
-
-        return back()->with('status', 'Pengaturan berhasil disimpan.');
     }
 }

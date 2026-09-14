@@ -8,16 +8,15 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('menus', function (Blueprint $table) {
-            $table->string('image')->nullable()->after('category');
+        Schema::create('token_reset_password', function (Blueprint $table) {
+            $table->string('email')->primary();
+            $table->string('token');
+            $table->timestamp('created_at')->nullable();
         });
     }
 
     public function down(): void
     {
-        Schema::table('menus', function (Blueprint $table) {
-            $table->dropColumn('image');
-        });
+        Schema::dropIfExists('token_reset_password');
     }
 };
-

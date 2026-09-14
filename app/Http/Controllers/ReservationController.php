@@ -16,13 +16,13 @@ class ReservationController extends Controller
     public function create()
     {
         $menus = Menu::where('status', 'tersedia')
-            ->where('stock', '>', 0)
-            ->orderBy('category')
-            ->orderBy('name')
+            ->where('stok', '>', 0)
+            ->orderBy('kategori')
+            ->orderBy('nama_menu')
             ->get();
 
-        $pajak = \App\Models\Setting::getValue('pajak', '10');
-        $service = \App\Models\Setting::getValue('service', '5');
+        $pajak = '10';
+        $service = '5';
 
         return view('frontend.reservation', compact('menus', 'pajak', 'service'));
     }
@@ -36,11 +36,11 @@ class ReservationController extends Controller
             return response()->json(['tables' => []]);
         }
 
-        $usedTables = Reservation::where('reservation_date', $date)
-            ->where('reservation_time', $time)
-            ->whereNotIn('status', ['cancelled'])
-            ->whereNotNull('table_number')
-            ->pluck('table_number')
+        $usedTables = Reservation::where('tanggal_reservasi', $date)
+            ->where('jam_reservasi', $time)
+            ->whereNotIn('status_reservasi', ['cancelled'])
+            ->whereNotNull('nomor_meja')
+            ->pluck('nomor_meja')
             ->toArray();
 
         $tables = [];
@@ -70,7 +70,7 @@ class ReservationController extends Controller
             'table_number' => ['required', 'integer', 'min:1', 'max:15'],
             'notes' => ['nullable', 'string', 'max:1000'],
             'order_items' => ['nullable', 'array'],
-            'order_items.*.id' => ['required', 'integer', 'exists:menus,id'],
+            'order_items.*.id' => ['required', 'integer', 'exists:menu,id'],
             'order_items.*.name' => ['required', 'string'],
             'order_items.*.qty' => ['required', 'integer', 'min:1'],
             'order_items.*.price' => ['required', 'integer', 'min:0'],
@@ -84,8 +84,8 @@ class ReservationController extends Controller
         }
         unset($item);
 
-        $pajakRate = (float) \App\Models\Setting::getValue('pajak', '10');
-        $serviceRate = (float) \App\Models\Setting::getValue('service', '5');
+        $pajakRate = (float) '10';
+        $serviceRate = (float) '5';
         $pajakAmount = round($totalAmount * $pajakRate / 100);
         $serviceAmount = round($totalAmount * $serviceRate / 100);
         $grandTotal = $totalAmount + $pajakAmount + $serviceAmount;
@@ -95,19 +95,19 @@ class ReservationController extends Controller
 
         foreach ($orderItems as $item) {
             $menu = Menu::findOrFail($item['id']);
-            if ($menu->stock < $item['qty']) {
+            if ($menu->stok < $item['qty']) {
                 return redirect()->back()->withInput()->withErrors([
-                    'stock' => "Stok {$menu->name} tidak mencukupi. Sisa: {$menu->stock}."
+                    'stock' => "Stok {$menu->nama_menu} tidak mencukupi. Sisa: {$menu->stok}."
                 ]);
             }
         }
 
         try {
             $reservation = DB::transaction(function () use ($data, $orderItems, $grandTotal, $dpAmount, $remainingAmount, $user) {
-                $isTaken = Reservation::where('reservation_date', $data['date'])
-                    ->where('reservation_time', $data['time'])
-                    ->whereNotIn('status', ['cancelled'])
-                    ->where('table_number', $data['table_number'])
+                $isTaken = Reservation::where('tanggal_reservasi', $data['date'])
+                    ->where('jam_reservasi', $data['time'])
+                    ->whereNotIn('status_reservasi', ['cancelled'])
+                    ->where('nomor_meja', $data['table_number'])
                     ->lockForUpdate()
                     ->exists();
 
@@ -116,28 +116,28 @@ class ReservationController extends Controller
                 }
 
                 foreach ($orderItems as $item) {
-                    Menu::where('id', $item['id'])->where('stock', '>=', $item['qty'])
-                        ->decrement('stock', $item['qty']);
+                    Menu::where('id', $item['id'])->where('stok', '>=', $item['qty'])
+                        ->decrement('stok', $item['qty']);
                 }
 
                 return Reservation::create([
                     'user_id' => $user?->role === 'pelanggan' ? $user->id : null,
-                    'reservation_code' => $this->makeReservationCode(),
-                    'customer_name' => $data['name'],
-                    'customer_email' => $data['email'] ?? $user?->email,
-                    'customer_phone' => $data['phone'] ?? $user?->phone,
-                    'guests' => $data['guests'],
-                    'reservation_date' => $data['date'],
-                    'reservation_time' => $data['time'],
-                    'notes' => $data['notes'] ?? null,
-                    'table_number' => $data['table_number'],
-                    'location' => $data['location'] ?? 'depok',
-                    'order_items' => $orderItems,
-                    'total_amount' => $grandTotal,
-                    'dp_amount' => $dpAmount,
-                    'dp_status' => 'unpaid',
-                    'remaining_amount' => $remainingAmount,
-                    'status' => 'pending',
+                    'kode_reservasi' => $this->makeReservationCode(),
+                    'nama_pelanggan' => $data['name'],
+                    'email_pelanggan' => $data['email'] ?? $user?->email,
+                    'telepon_pelanggan' => $data['phone'] ?? $user?->phone,
+                    'jumlah_orang' => $data['guests'],
+                    'tanggal_reservasi' => $data['date'],
+                    'jam_reservasi' => $data['time'],
+                    'catatan' => $data['notes'] ?? null,
+                    'nomor_meja' => $data['table_number'],
+                    'lokasi' => $data['location'] ?? 'depok',
+                    'item_pesanan' => $orderItems,
+                    'total_harga' => $grandTotal,
+                    'jumlah_dp' => $dpAmount,
+                    'status_dp' => 'unpaid',
+                    'sisa_pembayaran' => $remainingAmount,
+                    'status_reservasi' => 'pending',
                 ]);
             });
         } catch (\Exception $e) {
@@ -147,7 +147,7 @@ class ReservationController extends Controller
         if ($dpAmount > 0) {
             $this->setupMidtrans();
 
-            $orderId = $reservation->reservation_code . '-DP-' . time();
+            $orderId = $reservation->kode_reservasi . '-DP-' . time();
 
             $transactionDetails = [
                 'order_id' => $orderId,
@@ -199,7 +199,7 @@ class ReservationController extends Controller
     {
         $user = Auth::user();
 
-        $query = Reservation::query()->latest('reservation_date')->latest('reservation_time');
+        $query = Reservation::query()->latest('tanggal_reservasi')->latest('jam_reservasi');
 
         if ($user?->role === 'pelanggan') {
             $query->where('user_id', $user->id);
@@ -215,11 +215,11 @@ class ReservationController extends Controller
         if ($selectedId) {
             $activeReservation = $reservations->firstWhere('id', $selectedId) ??
                 $reservations->first(function (Reservation $reservation) {
-                    return ! in_array($reservation->status, ['completed', 'cancelled'], true);
+                    return ! in_array($reservation->status_reservasi, ['completed', 'cancelled'], true);
                 }) ?? $reservations->first();
         } else {
             $activeReservation = $reservations->first(function (Reservation $reservation) {
-                return ! in_array($reservation->status, ['completed', 'cancelled'], true);
+                return ! in_array($reservation->status_reservasi, ['completed', 'cancelled'], true);
             }) ?? $reservations->first();
         }
 
@@ -227,10 +227,10 @@ class ReservationController extends Controller
             ->reject(fn (Reservation $reservation) => $activeReservation && $reservation->id === $activeReservation->id)
             ->values();
 
-        $willCharge = $activeReservation && \Carbon\Carbon::parse($activeReservation->reservation_date)->isBefore(now()->addDays(3)->startOfDay());
+        $willCharge = $activeReservation && \Carbon\Carbon::parse($activeReservation->tanggal_reservasi)->isBefore(now()->addDays(3)->startOfDay());
 
-        $pelunasanHMin = (int) \App\Models\Setting::getValue('pelunasan_h_min', '1');
-        $isHMin1 = $activeReservation && \Carbon\Carbon::parse($activeReservation->reservation_date)->subDays($pelunasanHMin)->startOfDay()->lte(now());
+        $pelunasanHMin = 1;
+        $isHMin1 = $activeReservation && \Carbon\Carbon::parse($activeReservation->tanggal_reservasi)->subDays($pelunasanHMin)->startOfDay()->lte(now());
 
         $snapToken = session('snap_token');
 
@@ -244,33 +244,33 @@ class ReservationController extends Controller
     {
         $reservation = Reservation::findOrFail($id);
 
-        if ($reservation->dp_status !== 'unpaid') {
+        if ($reservation->status_dp !== 'unpaid') {
             return response()->json(['error' => 'DP sudah dibayar atau lunas.'], 400);
         }
 
-        if ($reservation->dp_amount <= 0) {
+        if ($reservation->jumlah_dp <= 0) {
             return response()->json(['error' => 'Tidak ada DP yang perlu dibayar.'], 400);
         }
 
         $this->setupMidtrans();
 
-        $orderId = $reservation->reservation_code . '-DP-' . time();
+        $orderId = $reservation->kode_reservasi . '-DP-' . time();
 
         $transactionDetails = [
             'order_id' => $orderId,
-            'gross_amount' => $reservation->dp_amount,
+            'gross_amount' => $reservation->jumlah_dp,
         ];
 
         $customerDetails = [
-            'first_name' => $reservation->customer_name,
-            'email' => $reservation->customer_email,
-            'phone' => $reservation->customer_phone,
+            'first_name' => $reservation->nama_pelanggan,
+            'email' => $reservation->email_pelanggan,
+            'phone' => $reservation->telepon_pelanggan,
         ];
 
         $itemDetails = [
             [
                 'id' => 'DP',
-                'price' => $reservation->dp_amount,
+                'price' => $reservation->jumlah_dp,
                 'quantity' => 1,
                 'name' => 'Uang Muka Reservasi (50%)',
             ],
@@ -320,11 +320,11 @@ class ReservationController extends Controller
             if (in_array($transactionStatus, ['settlement', 'capture'])) {
                 if ($type === 'dp') {
                     $reservation->update([
-                        'dp_status' => 'paid',
-                        'status' => 'confirmed',
+                        'status_dp' => 'paid',
+                        'status_reservasi' => 'confirmed',
                     ]);
                 } elseif ($type === 'remaining') {
-                    $reservation->update(['dp_status' => 'lunas']);
+                    $reservation->update(['status_dp' => 'lunas']);
                 }
                 return response()->json(['success' => true, 'status' => $transactionStatus]);
             }
@@ -342,39 +342,39 @@ class ReservationController extends Controller
     {
         $reservation = Reservation::findOrFail($id);
 
-        if ($reservation->dp_status !== 'paid') {
+        if ($reservation->status_dp !== 'paid') {
             return response()->json(['error' => 'DP belum dibayar.'], 400);
         }
 
-        if ($reservation->dp_status === 'lunas') {
+        if ($reservation->status_dp === 'lunas') {
             return response()->json(['error' => 'Pembayaran sudah lunas.'], 400);
         }
 
-        $pelunasanHMin = (int) \App\Models\Setting::getValue('pelunasan_h_min', '1');
-        $isHMin1 = \Carbon\Carbon::parse($reservation->reservation_date)->subDays($pelunasanHMin)->startOfDay()->lte(now());
+        $pelunasanHMin = 1;
+        $isHMin1 = \Carbon\Carbon::parse($reservation->tanggal_reservasi)->subDays($pelunasanHMin)->startOfDay()->lte(now());
         if (!$isHMin1) {
             return response()->json(['error' => 'Pembayaran sisa hanya bisa dilakukan H-' . $pelunasanHMin . ' atau hari-H reservasi.'], 400);
         }
 
         $this->setupMidtrans();
 
-        $orderId = $reservation->reservation_code . '-LUNAS';
+        $orderId = $reservation->kode_reservasi . '-LUNAS';
 
         $transactionDetails = [
             'order_id' => $orderId,
-            'gross_amount' => $reservation->remaining_amount,
+            'gross_amount' => $reservation->sisa_pembayaran,
         ];
 
         $customerDetails = [
-            'first_name' => $reservation->customer_name,
-            'email' => $reservation->customer_email,
-            'phone' => $reservation->customer_phone,
+            'first_name' => $reservation->nama_pelanggan,
+            'email' => $reservation->email_pelanggan,
+            'phone' => $reservation->telepon_pelanggan,
         ];
 
         $itemDetails = [
             [
                 'id' => 'SISA',
-                'price' => $reservation->remaining_amount,
+                'price' => $reservation->sisa_pembayaran,
                 'quantity' => 1,
                 'name' => 'Sisa Pembayaran Reservasi',
             ],
@@ -403,21 +403,21 @@ class ReservationController extends Controller
         $currentDate = request('date');
 
         $reservations = Reservation::query()
-            ->when($currentDate, fn ($query) => $query->whereDate('reservation_date', $currentDate))
-            ->when($currentStatus !== 'all', fn ($query) => $query->where('status', $currentStatus))
-            ->orderBy('reservation_date')
-            ->orderBy('reservation_time')
+            ->when($currentDate, fn ($query) => $query->whereDate('tanggal_reservasi', $currentDate))
+            ->when($currentStatus !== 'all', fn ($query) => $query->where('status_reservasi', $currentStatus))
+            ->orderBy('tanggal_reservasi')
+            ->orderBy('jam_reservasi')
             ->get();
 
-        $todayReservations = Reservation::whereDate('reservation_date', today())
-            ->whereNotIn('status', ['cancelled'])
+        $todayReservations = Reservation::whereDate('tanggal_reservasi', today())
+            ->whereNotIn('status_reservasi', ['cancelled'])
             ->get();
 
         $stats = [
             'new_today' => Reservation::whereDate('created_at', today())->count(),
             'available_tables' => max(0, 15 - $todayReservations->count()),
             'total_tables' => 15,
-            'occupancy' => min(100, (int) round(($todayReservations->sum('guests') / 72) * 100)),
+            'occupancy' => min(100, (int) round(($todayReservations->sum('jumlah_orang') / 72) * 100)),
         ];
 
         return view(request()->routeIs('admin.*') ? 'backend.admin.reservations' : 'backend.kasir.reservations', compact(
@@ -437,19 +437,23 @@ class ReservationController extends Controller
             'dp_status' => ['nullable', 'string', 'in:unpaid,paid,lunas'],
         ]);
 
-        $updateData = array_filter($data);
-
-        // If status is updated to completed, automatically mark dp_status as lunas if not already
-        if (isset($updateData['status']) && $updateData['status'] === 'completed') {
-            $updateData['dp_status'] = 'lunas';
+        $updateData = [];
+        if (isset($data['status'])) {
+            $updateData['status_reservasi'] = $data['status'];
+        }
+        if (isset($data['dp_status'])) {
+            $updateData['status_dp'] = $data['dp_status'];
         }
 
-        // If dp_status is updated to lunas, update remaining_amount to 0
-        if (isset($updateData['dp_status']) && $updateData['dp_status'] === 'lunas') {
-            // Wait, does it also need to change the status of the reservation?
-            // If they paid DP and sisa, status should at least be confirmed.
-            if ($reservation->status === 'pending') {
-                $updateData['status'] = 'confirmed';
+        // If status is updated to completed, automatically mark status_dp as lunas if not already
+        if (isset($updateData['status_reservasi']) && $updateData['status_reservasi'] === 'completed') {
+            $updateData['status_dp'] = 'lunas';
+        }
+
+        // If status_dp is updated to lunas, update remaining_amount to 0
+        if (isset($updateData['status_dp']) && $updateData['status_dp'] === 'lunas') {
+            if ($reservation->status_reservasi === 'pending') {
+                $updateData['status_reservasi'] = 'confirmed';
             }
         }
 
@@ -476,7 +480,7 @@ class ReservationController extends Controller
         // Extract base reservation code by removing the suffix
         $baseOrderId = preg_replace('/-(DP|LUNAS)(-\d+)?$/', '', $orderId);
 
-        $reservation = Reservation::where('reservation_code', $baseOrderId)->first();
+        $reservation = Reservation::where('kode_reservasi', $baseOrderId)->first();
 
         if (!$reservation) {
             return response('OK', 200);
@@ -485,21 +489,21 @@ class ReservationController extends Controller
         if ($isDp) {
             if ($status === 'settlement' || $status === 'capture') {
                 $reservation->update([
-                    'dp_status' => 'paid',
-                    'status' => 'confirmed',
+                    'status_dp' => 'paid',
+                    'status_reservasi' => 'confirmed',
                 ]);
             } elseif ($status === 'deny' || $status === 'cancel' || $status === 'expire') {
-                $reservation->update(['status' => 'cancelled']);
+                $reservation->update(['status_reservasi' => 'cancelled']);
             }
         } elseif ($isLunas) {
             if ($status === 'settlement' || $status === 'capture') {
-                $reservation->update(['dp_status' => 'lunas']);
+                $reservation->update(['status_dp' => 'lunas']);
             }
         } else {
             if ($status === 'settlement' || $status === 'capture') {
-                $reservation->update(['status' => 'confirmed']);
+                $reservation->update(['status_reservasi' => 'confirmed']);
             } elseif ($status === 'deny' || $status === 'cancel' || $status === 'expire') {
-                $reservation->update(['status' => 'cancelled']);
+                $reservation->update(['status_reservasi' => 'cancelled']);
             }
         }
 
@@ -518,26 +522,26 @@ class ReservationController extends Controller
     {
         $reservation = Reservation::findOrFail($id);
 
-        if ($reservation->status === 'cancelled') {
+        if ($reservation->status_reservasi === 'cancelled') {
             return redirect()->back()->with('info', 'Reservasi sudah dibatalkan sebelumnya.');
         }
 
-        if (!in_array($reservation->status, ['pending', 'confirmed'], true)) {
+        if (!in_array($reservation->status_reservasi, ['pending', 'confirmed'], true)) {
             return redirect()->back()->with('error', 'Reservasi tidak dapat dibatalkan.');
         }
 
-        $update = ['status' => 'cancelled'];
+        $update = ['status_reservasi' => 'cancelled'];
 
-        $reservationDate = \Carbon\Carbon::parse($reservation->reservation_date);
+        $reservationDate = \Carbon\Carbon::parse($reservation->tanggal_reservasi);
         $threshold = now()->addDays(3)->startOfDay();
 
         if ($reservationDate->isBefore($threshold)) {
-            $update['cancellation_charge'] = 50000;
+            $update['biaya_pembatalan'] = 50000;
         }
 
         $reservation->update($update);
 
-        $message = $update['cancellation_charge'] ?? false
+        $message = $update['biaya_pembatalan'] ?? false
             ? 'Reservasi berhasil dibatalkan. Dikenakan charge Rp 50.000 karena pembatalan kurang dari 3 hari sebelum reservasi.'
             : 'Reservasi berhasil dibatalkan.';
 
@@ -548,28 +552,9 @@ class ReservationController extends Controller
     {
         do {
             $code = 'RSV-' . now()->format('Ymd') . '-' . Str::upper(Str::random(4));
-        } while (Reservation::where('reservation_code', $code)->exists());
+        } while (Reservation::where('kode_reservasi', $code)->exists());
 
         return $code;
-    }
-
-    private function assignTableNumber(string $date, string $time): ?int
-    {
-        $usedTables = Reservation::where('reservation_date', $date)
-            ->where('reservation_time', $time)
-            ->whereNotIn('status', ['cancelled'])
-            ->whereNotNull('table_number')
-            ->lockForUpdate()
-            ->pluck('table_number')
-            ->toArray();
-
-        for ($i = 1; $i <= 15; $i++) {
-            if (!in_array($i, $usedTables)) {
-                return $i;
-            }
-        }
-
-        return null;
     }
 
     protected function setupMidtrans(): void
